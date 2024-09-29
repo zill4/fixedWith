@@ -2,19 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Header from '../../components/Header';
 
-const Header = () => (
-  <View style={styles.header}>
-    <Ionicons name="car-sport" size={24} color="#DE2020" />
-    <Text style={styles.headerText}>AutoSnap</Text>
-  </View>
-);
-let tempImage: string = 'https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080'
 
+let tempCarImage: string = 'https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080'
+let tempEngineImage: string =  'https://assets.api.uizard.io/api/cdn/stream/7294fa89-54fb-4ac9-914d-c5b44f98c77e.png'
 const CarProfile = () => (
   <View style={styles.carProfile}>
     <Image
-      source={{ uri: tempImage }}
+      source={{ uri: tempCarImage }}
       style={styles.carImage}
     />
     <Text style={styles.carText}>Your Toyota 86</Text>
@@ -65,7 +61,7 @@ const PopularCarMods = () => (
   <View style={styles.popularModsContainer}>
     <Text style={styles.sectionTitle}>Popular Car Mods</Text>
     <PopularMod
-      image={{uri: tempImage}}
+      image={{uri: tempEngineImage}}
       title="Exhaust System Upgrade"
       description="Enhance your car's performance with a new exhaust system."
     />
@@ -97,17 +93,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f0f0',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    color: '#DE2020',
   },
   carProfile: {
     flexDirection: 'row',
