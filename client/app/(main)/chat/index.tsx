@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Header from '../../../components/Header';
 interface ChatItem {
   id: string;
@@ -42,9 +42,8 @@ export default function ChatScreen() {
       headerShown: false,
     });
   }, [navigation]);
-
   const renderChatItem = ({ item }: { item: ChatItem }) => (
-    <TouchableOpacity style={styles.chatItem}>
+    <TouchableOpacity style={styles.chatItem} onPress={() => router.push(`/(main)/chat/${item.id}` as any)}>
       <Image source={{ uri: item.image }} style={styles.chatItemImage} />
       <View style={styles.chatItemContent}>
         <Text style={styles.chatItemTitle}>{item.title}</Text>

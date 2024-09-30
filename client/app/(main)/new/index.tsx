@@ -3,11 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, ScrollView 
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../../../components/Header';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 export default function NewScreen() {
   const [activeTab, setActiveTab] = useState('Diagnose');
   const [images, setImages] = useState<string[]>([]);
   const navigation = useNavigation();
+  const router = useRouter();
 
   useEffect(() => {
     navigation.setOptions({
@@ -24,6 +25,11 @@ export default function NewScreen() {
   const handleAddImage = () => {
     // Implement image picker logic here
     console.log('Add image');
+  };
+
+  const handleSubmit = () => {
+    console.log('Submit');
+    router.push('/chat/dummy-id' as any);
   };
 
   return (
@@ -77,12 +83,27 @@ export default function NewScreen() {
             <Image key={index} source={{ uri: image }} style={styles.image} />
           ))}
         </View>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleSubmit}>
+        <Text style={styles.confirmButtonText}>Confirm</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+    confirmButton: {
+        backgroundColor: '#DE2020',
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    confirmButtonText: {
+    color: 'white',     
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
