@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, FlatList, S
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import Header from '../../../../components/Header';
+
 interface Message {
   id: string;
   text: string;
@@ -34,7 +35,7 @@ export default function ChatScreen() {
   };
 
   const handleViewQuote = () => {
-    router.push(`/chat/${id}/quote` as any);
+    router.push(`/chat/${id}/diagnosis` as any);
   };
 
 const mechanicImageTemp: string = 'https://images.unsplash.com/photo-1552656967-7a0991a13906?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHwxfHxlbmdpbmV8ZW58MXx8fHwxNzI3NTkwNjkzfDA&ixlib=rb-4.0.3&q=80&w=1080'

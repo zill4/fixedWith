@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "ai.fixedwith.client"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,11 @@
         "asset": "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf",
         "fontFamily": "Ionicons"
       }
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8a35493f-f797-45ce-be39-ddeff9c2faaf"
+      }
+    }
   }
 }

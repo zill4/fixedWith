@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Header from '../../../components/Header';
 interface ChatItem {
   id: string;
@@ -19,10 +19,9 @@ interface Expert {
 }
 
 const chatItems: ChatItem[] = [
-  { id: '1', title: 'Engine Issue', timestamp: '9/29/24 1:28 am', image: 'https://example.com/engine.jpg' },
-  { id: '2', title: 'Engine Issue', timestamp: '9/29/24 1:28 am', image: 'https://example.com/engine.jpg' },
-  { id: '3', title: 'Engine Issue', timestamp: '9/29/24 1:28 am', image: 'https://example.com/engine.jpg' },
-  { id: '4', title: 'Engine Issue', timestamp: '9/29/24 1:28 am', image: 'https://example.com/engine.jpg' },
+  { id: '1', title: 'Engine upgrade build', timestamp: '9/29/24 1:28 am', image: 'https://images.unsplash.com/photo-1557411255-28ebcc0fdd54?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: '2', title: 'bodykit repair build', timestamp: '9/29/24 1:28 am', image: 'https://images.unsplash.com/photo-1515569067071-ec3b51335dd0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+
 ];
 
 const experts: Expert[] = [
@@ -37,14 +36,21 @@ export default function BuildRepairScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const navigation = useNavigation();
 
-  useEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-  }, [navigation]);
+    const handleOpenBuild = (id: string) => {
+        router.push({
+          pathname: '/build-repair/[id]',
+          params: { id }
+        });
+      };
+    
+    useEffect(() => {
+        navigation.setOptions({
+        headerShown: false,
+        });
+    }, [navigation]);
 
     const renderChatItem = ({ item }: { item: ChatItem }) => (
-      <TouchableOpacity style={styles.chatItem}>
+      <TouchableOpacity style={styles.chatItem} onPress={() => handleOpenBuild(item.id)}>
         <Image source={{ uri: item.image }} style={styles.chatItemImage} />
         <View style={styles.chatItemContent}>
           <Text style={styles.chatItemTitle}>{item.title}</Text>
