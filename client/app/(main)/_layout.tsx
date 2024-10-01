@@ -10,7 +10,7 @@ export default function MainLayout() {
       <Tabs.Screen name="new" options={{ headerShown: false }} />
       <Tabs.Screen name="chat" options={{ headerShown: false }} />
       <Tabs.Screen name="quote" options={{ headerShown: false }} />
-      {/* <Tabs.Screen name="settings" options={{ headerShown: false }} /> */}
+      <Tabs.Screen name="settings" options={{ headerShown: false }} />
     </Tabs>
   );
 }
