@@ -8,7 +8,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   
   
   const handleLogin = async () => {
@@ -20,9 +20,13 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Implement Google SSO login logic here
-    console.log('Google login pressed');
+  const handleGoogleLogin = async () => {
+    try {
+      await googleLogin();
+      router.replace('/(main)/home');
+    } catch (error: any) {
+      Alert.alert('Google Login Error', error.message);
+    }
   };
 
 

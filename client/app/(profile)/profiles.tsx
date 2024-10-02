@@ -1,80 +1,122 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/Header';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface ProfileData {
+  id: string;
+  name: string;
+  spec: string;
+  year: string;
+  mileage: string;
+  modifications: string;
+  maintenance: string;
+  engine: string;
+  image: string;
+}
 
 export default function ProfilesScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [profiles, setProfiles] = useState<ProfileData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const tempProfilePlaceholderImage = "https://images.unsplash.com/photo-1583732964634-2576820523d0?q=80&w=2127&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
-  let tempCarImage: string = 'https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080'
-  // TODO: Replace with actual profile data
-  const profile = {
-    name: 'Toyota 86',
-    spec: 'TRD SE',
-    year: '2019',
-    mileage: '50,000 miles',
-    modifications: 'None',
-    maintenance: 'Regular',
-    engine: 'V6',
-    image: tempCarImage, // Replace with actual image URL
+  useEffect(() => {
+    fetchProfiles();
+  }, [user]);
+
+  const fetchProfiles = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const db = getFirestore();
+    const profilesCollection = collection(db, 'users', user.uid, 'profiles');
+    try {
+      const querySnapshot = await getDocs(profilesCollection);
+      const fetchedProfiles = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as ProfileData));
+      setProfiles(fetchedProfiles);
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditProfile = () => {
-    // TODO: Implement edit profile functionality
+  const handleAddProfile = () => {
     router.push('/profile-setup' as any);
   };
+
+  const handleEditProfile = (profileId: string) => {
+    router.push({ pathname: '/profile-setup', params: { profileId } } as any);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <View style={styles.centerContent}>
+          <Text>Loading profiles...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <Header />
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
+      <Text style={styles.title}>Your Car Profiles</Text>
+      
+      {profiles.length === 0 ? (
+        <View style={styles.noProfilesContainer}>
+          <Text style={styles.noProfilesText}>You haven't created any car profiles yet.</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddProfile}>
+            <Text style={styles.addButtonText}>Create Your First Profile</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        profiles.map((profile) => (
+          <View key={profile.id} style={styles.card}>
+            <View style={styles.profileHeader}>
+              <Image source={{ uri: tempProfilePlaceholderImage }} style={styles.profileImage} />
+              <View>
+                <Text style={styles.profileName}>{profile.name}</Text>
+                <Text style={styles.profileSpec}>Spec: {profile.spec}</Text>
+              </View>
+            </View>
 
-      <View style={styles.card}>
-        <View style={styles.profileHeader}>
-          <Image source={{ uri: profile.image }} style={styles.profileImage} />
-          <View>
-            <Text style={styles.profileName}>{profile.name}</Text>
-            <Text style={styles.profileSpec}>Spec: {profile.spec}</Text>
+            <View style={styles.infoGrid}>
+              <InfoItem label="Year" value={profile.year} />
+              <InfoItem label="Engine" value={profile.engine} />
+              <InfoItem label="Mileage" value={profile.mileage} />
+              <InfoItem label="Modifications" value={profile.modifications} />
+              <InfoItem label="Maintenance" value={profile.maintenance} />
+            </View>
+
+            <TouchableOpacity style={styles.editButton} onPress={() => handleEditProfile(profile.id)}>
+              <Text style={styles.editButtonText}>Edit Car Details</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.infoGrid}>
-          <InfoItem label="Year" value={profile.year} />
-          <InfoItem label="Engine" value={profile.engine} />
-          <InfoItem label="Mileage" value={profile.mileage} />
-          <InfoItem label="Horsepower" value="Upgrade plans" />
-          <InfoItem label="Modifications" value={profile.modifications} />
-          <InfoItem label="Tune-up" value={profile.maintenance} />
-        </View>
-
-        <Text style={styles.sectionTitle}>Diagnosese</Text>
-        <View style={styles.grid}>
-          <GridItem label="Engine" value="No" />
-          <GridItem label="Transmi" value="ssion" />
-          <GridItem label="Service" value="Tires" />
-          <GridItem label="Pad" value="s" />
-          <GridItem label="Suspensi" value="Pressur" />
-          <GridItem label="Exhaust" value="" />
-          <GridItem label="Alignmen" value="Brakes" />
-          <GridItem label="Minor" value="" />
-        </View>
-
-        <Text style={styles.sectionTitle}>Mods</Text>
-        <View style={styles.grid}>
-          <GridItem label="Engine" value="No" />
-          <GridItem label="Transmi" value="ssion" />
-          <GridItem label="Service" value="Tires" />
-          <GridItem label="Pad" value="s" />
-          <GridItem label="Suspensi" value="Pressur" />
-          <GridItem label="Exhaust" value="" />
-          <GridItem label="Alignmen" value="Brakes" />
-          <GridItem label="Minor" value="" />
-        </View>
-
-        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-          <Text style={styles.editButtonText}>Edit Car Details</Text>
+        ))
+      )}
+      
+      {profiles.length > 0 && (
+        <TouchableOpacity style={styles.addButton} onPress={handleAddProfile}>
+          <Text style={styles.addButtonText}>Add Another Profile</Text>
         </TouchableOpacity>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -86,28 +128,39 @@ const InfoItem = ({ label, value }: { label: string, value: string }) => (
   </View>
 );
 
-const GridItem = ({ label, value }: { label: string, value: string }) => (
-  <View style={styles.gridItem}>
-    <Text style={styles.gridLabel}>{label}</Text>
-    <Text style={styles.gridValue}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f0f0',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+  },
+  backButton: {
+    marginLeft: 16,
+    marginTop: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#ff0000',
+    marginLeft: 16,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  noProfilesContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    margin: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  noProfilesText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   card: {
     backgroundColor: 'white',
@@ -154,26 +207,6 @@ const styles = StyleSheet.create({
   infoValue: {
     color: '#666',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  gridItem: {
-    width: '25%',
-    marginBottom: 8,
-  },
-  gridLabel: {
-    fontWeight: 'bold',
-  },
-  gridValue: {
-    color: '#666',
-  },
   editButton: {
     backgroundColor: '#ff0000',
     borderRadius: 8,
@@ -182,6 +215,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   editButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: '#ff0000',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    margin: 16,
+  },
+  addButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },

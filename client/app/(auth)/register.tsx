@@ -10,7 +10,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
 
 
   const handleRegister = async () => {
@@ -26,9 +26,13 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Implement Google SSO login logic here
-    console.log('Google login pressed');
+  const handleGoogleLogin = async () => {
+    try {
+      await googleLogin();
+      router.replace('/(profile)/profile-setup');
+    } catch (error: any) {
+      Alert.alert('Google Login Error', error.message);
+    }
   };
 
   const handleNavigateToLogin = () => {

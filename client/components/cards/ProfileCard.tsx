@@ -5,20 +5,21 @@ import { useRouter } from 'expo-router';
 interface ProfileCardProps {
     image: string;
     title: string;
-    link: string
+    func: () => void;
+    isSelected: boolean;
 }
 
-export default function ProfileCard ({image, title, link}: ProfileCardProps) {
+export default function ProfileCard ({image, title, func, isSelected}: ProfileCardProps) {
 
     const router = useRouter()
 
-    const handleProfileRoute = () => {
-        router.push(link as any)
-      }
+    // const handleProfileRoute = () => {
+    //     router.push(link as any)
+    //   }
 
     return (
-    <TouchableOpacity onPress={handleProfileRoute}>
-    <View style={styles.carProfile}>
+    <TouchableOpacity onPress={func}>
+    <View style={[styles.carProfile, isSelected && styles.selectedCarProfile]}>
       <Image
         source={{ uri: image }}
         style={styles.carImage}
@@ -41,6 +42,10 @@ const styles = StyleSheet.create({
       margin: 16,
       padding: 16,
       borderRadius: 8,
+    },
+    selectedCarProfile: {
+      borderWidth: 2,
+      borderColor: '#DE2020',
     },
     carImage: {
       width: 60,

@@ -89,11 +89,12 @@ const PopularCarMods = () => {
 };
 
 export default function HomeScreen() {
+  const router = useRouter()
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <Header />
-        <ProfileCard image={tempCarImage} title="Your Toyota 86" link="/(profile)/profiles" />
+        <ProfileCard image={tempCarImage} title="Your Toyota 86" func={() => router.push('/(profile)/profiles')} isSelected={false} />
         <CarDiagnosis />
         <PopularCarMods />
       </ScrollView>
