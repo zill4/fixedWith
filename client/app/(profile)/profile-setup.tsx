@@ -13,6 +13,8 @@ export default function ProfileSetupScreen() {
   const handleContinue = () => {
     // TODO: Save car information
     router.replace('/(main)/home');
+    // TODO: Fix car go back
+    // router.back();
   };
 
   return (

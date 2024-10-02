@@ -22,6 +22,7 @@ export default function ProfilesScreen() {
 
   const handleEditProfile = () => {
     // TODO: Implement edit profile functionality
+    router.push('/profile-setup' as any);
   };
 
   return (

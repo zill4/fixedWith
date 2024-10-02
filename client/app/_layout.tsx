@@ -5,11 +5,19 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '../contexts/AuthContext'; // You'll need to create this
-
+import { ExpoRoot } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import '../firebase';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+export const unstable_settings = {
+  initialRouteName: '(auth)',
+};
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -44,6 +52,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Ionicons: require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
   });
 
   useEffect(() => {

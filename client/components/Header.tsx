@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
-
+import { useRouter } from 'expo-router';
 export default function Header() {
-
+  const router = useRouter();
   const handleEditProfile = () => {
-    // TODO: Implement edit profile functionality
+    router.push('/settings' as any);
   };
 
   return (

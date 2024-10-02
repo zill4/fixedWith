@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "747369909932",
+    "project_id": "fixedwith",
+    "storage_bucket": "fixedwith.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747369909932:android:82ef9d7ea496ab60285909",
+        "android_client_info": {
+          "package_name": "ai.fixedwith.auto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5HN_H3bkK98PjCIuy5o5IiI32nPBma9s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
