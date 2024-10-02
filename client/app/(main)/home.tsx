@@ -1,100 +1,107 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import Header from '../../components/Header';
 import { useRouter } from 'expo-router';
+import Header from '../../components/Header';
 import ProfileCard from '@/components/cards/ProfileCard';
 import CircularIconButton from '@/components/buttons/CircularIconButton';
 import MediaCard from '@/components/cards/MediaCard';
+import { useAuth } from '@/contexts/AuthContext';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
-
-let tempCarImage: string = 'https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080'
 let tempEngineImage: string =  'https://assets.api.uizard.io/api/cdn/stream/7294fa89-54fb-4ac9-914d-c5b44f98c77e.png'
 
-
-
-const DiagnosisItem = ({ icon, label }: { icon: any, label: any }) => {
+const DiagnosisItem = ({ icon, label }: { icon: any, label: string }) => {
   const router = useRouter();
 
   const handlePress = () => {
-    router.push('/new' as any);
+    router.push({ 
+      pathname: '/new', 
+      params: { description: label, type: 'Repair' } 
+    } as any);
   };
 
   return (
-  <View style={styles.diagnosisItem}>
-    <CircularIconButton icon={icon} onPress={handlePress} />
-    <Text style={styles.diagnosisLabel}>{label}</Text>
-  </View>);
-
+    <TouchableOpacity onPress={handlePress} style={styles.diagnosisItem}>
+      <CircularIconButton icon={icon} onPress={handlePress} />
+      <Text style={styles.diagnosisLabel}>{label}</Text>
+    </TouchableOpacity>
+  );
 };
 
 const CarDiagnosis = () => (
   <View style={styles.diagnosisContainer}>
     <Text style={styles.sectionTitle}>Car Diagnosis</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.diagnosisScroll}>
-      <DiagnosisItem icon="add-circle-outline" label="New" />
       <DiagnosisItem icon="alert-circle-outline" label="Flat tire" />
-      <DiagnosisItem icon="cog-outline" label="Suspension" />
-      <DiagnosisItem icon="disc-outline" label="Brake" />
-      <DiagnosisItem icon="construct-outline" label="Engine" />
+      <DiagnosisItem icon="cog-outline" label="Suspension issue" />
+      <DiagnosisItem icon="disc-outline" label="Brake problem" />
+      <DiagnosisItem icon="construct-outline" label="Engine trouble" />
     </ScrollView>
-    {/* <View style={styles.searchContainer}>
-      <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Enter car issue here"
-        placeholderTextColor="#888"
-      />
-    </View> */}
-  </View>
-);
-
-const PopularMod = ( { image, title, description }: { image: any, title: any, description: any }) => (
-  <View style={styles.popularMod}>
-    <Image source={image} style={styles.modImage} />
-    <View style={styles.modInfo}>
-      <Text style={styles.modTitle}>{title}</Text>
-      <Text style={styles.modDescription}>{description}</Text>
-    </View>
   </View>
 );
 
 const PopularCarMods = () => {
   const router = useRouter();
 
-  const handlePress = () => {
-    router.push('/new' as any);
+  const handlePress = (title: string) => {
+    router.push({ 
+      pathname: '/new', 
+      params: { description: title, type: 'Mod' } 
+    } as any);
   };
 
   return (
     <View style={styles.popularModsContainer}>
-    <Text style={styles.sectionTitle}>Popular Car Mods</Text>
-    <MediaCard
-      image={{uri: tempEngineImage}}
-      title="Exhaust System Upgrade"
-      description="Enhance your car's performance with a new exhaust system."
-      onPress={handlePress}
-    />
-    {/* <View style={styles.searchContainer}>
-      <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Enter your custom mod idea here..."
-        placeholderTextColor="#888"
+      <Text style={styles.sectionTitle}>Popular Car Mods</Text>
+      <MediaCard
+        image={{uri: tempEngineImage}}
+        title="Exhaust System Upgrade"
+        description="Enhance your car's performance with a new exhaust system."
+        onPress={() => handlePress("Exhaust System Upgrade")}
       />
-    </View> */}
-  </View>
+    </View>
   )
 };
 
 export default function HomeScreen() {
-  const router = useRouter()
+  const router = useRouter();
+  const { user } = useAuth();
+  const [profileCount, setProfileCount] = useState(0);
+
+  useEffect(() => {
+    const fetchProfileCount = async () => {
+      if (!user) return;
+
+      const db = getFirestore();
+      const profilesRef = collection(db, 'users', user.uid, 'profiles');
+      const q = query(profilesRef);
+
+      try {
+        const querySnapshot = await getDocs(q);
+        setProfileCount(querySnapshot.size);
+      } catch (error) {
+        console.error('Error fetching profile count:', error);
+      }
+    };
+
+    fetchProfileCount();
+  }, [user]);
+
+  const handleProfilePress = () => {
+    router.push('/(profile)/profiles');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <Header />
-        <ProfileCard image={tempCarImage} title="Your Toyota 86" func={() => router.push('/(profile)/profiles')} isSelected={false} />
+        <ProfileCard 
+          image={tempEngineImage}
+          title={profileCount > 0 ? `View Car Profiles: ${profileCount}` : "Create a car profile"}
+          func={handleProfilePress}
+          isSelected={false}
+        />
         <CarDiagnosis />
         <PopularCarMods />
       </ScrollView>
@@ -106,6 +113,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f0f0',
+  },
+  diagnosisItem: {
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  diagnosisLabel: {
+    textAlign: 'center',
+    marginTop: 8,
   },
   carProfile: {
     flexDirection: 'row',
@@ -136,10 +151,7 @@ const styles = StyleSheet.create({
   diagnosisScroll: {
     marginBottom: 16,
   },
-  diagnosisItem: {
-    alignItems: 'center',
-    marginRight: 16,
-  },
+
   diagnosisIconContainer: {
     width: 60,
     height: 60,
@@ -149,9 +161,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  diagnosisLabel: {
-    textAlign: 'center',
-  },
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

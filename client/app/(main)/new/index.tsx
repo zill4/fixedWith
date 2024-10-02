@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, ScrollView,
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../../../components/Header';
-import { useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import ProfileCard from '@/components/cards/ProfileCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirestore, collection, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function NewScreen() {
+  const { description, type } = useLocalSearchParams<{ description: string, type: string }>();
   const [activeTab, setActiveTab] = useState('Repair');
   const [problemDescription, setProblemDescription] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -19,14 +20,20 @@ export default function NewScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const { user } = useAuth();
-
+  
   let tempCarImage: string = 'https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080'
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
+    if (type) {
+      setActiveTab(type);
+    }
+    if (description) {
+      setProblemDescription(description);
+    }
     fetchCarProfiles();
-  }, [navigation]);
+  }, [navigation, type, description]);
 
   const fetchCarProfiles = async () => {
     if (!user) return;
@@ -110,6 +117,9 @@ export default function NewScreen() {
       const docRef = await addDoc(projectsCollection, newProject);
       console.log('Project created with ID: ', docRef.id);
       Alert.alert('Success', 'Your project has been created');
+      setProblemDescription('');
+      setImage(null);
+      setActiveTab('Repair');
       router.push('/chat/' + docRef.id as any);
     } catch (error) {
       console.error('Error creating project:', error);
