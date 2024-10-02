@@ -4,19 +4,19 @@ import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function LoginScreen() {
+export default function ResetPasswordScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
-  const { login } = useAuth();
   
-  
-  const handleLogin = async () => {
+  const { resetPassword } = useAuth();
+  const handleResetPassword = async () => {
     try {
-      await login(email, password);
-      router.replace('/(main)/home');
+      await resetPassword(email);
+      Alert.alert('Success', 'Password reset email sent. Please check your inbox.');
+      router.replace('/(auth)/login');
     } catch (error: any) {
-      Alert.alert('Login Error', error.message);
+      Alert.alert('Reset Password Error', error.message);
     }
   };
 
@@ -28,10 +28,6 @@ export default function LoginScreen() {
 
 const handleNavigateToRegister = () => {
   router.replace('/(auth)/register');
-};
-
-const handleNavigateToResetPassword = () => {
-  router.replace('/(auth)/resetPassword');
 };
 
   return (
@@ -48,33 +44,15 @@ const handleNavigateToResetPassword = () => {
         style={styles.input}
         autoCapitalize="none"
       />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-      />
       
-      <TouchableOpacity style={styles.signUpButton} onPress={handleLogin}>
-        <Text style={styles.signUpButtonText}>Sign in</Text>
+      <TouchableOpacity style={styles.signUpButton} onPress={handleResetPassword}>
+        <Text style={styles.signUpButtonText}>Send reset password email</Text>
       </TouchableOpacity>
       
       <TouchableOpacity onPress={handleNavigateToRegister}>
         <Text style={styles.resetPasswordText}>Don't have an account sign up</Text>
       </TouchableOpacity>
-
-
-      <TouchableOpacity onPress={handleNavigateToResetPassword}>
-        <Text style={styles.resetPasswordText}>Reset password</Text>
-      </TouchableOpacity>
-
             
-      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-      <Text style={styles.googleButtonText}>Sign in with  </Text>
-        <Ionicons name="logo-google" size={24} color="#DE2020" />
-        <Text style={styles.googleButtonText}>oogle</Text>
-      </TouchableOpacity>
     </View>
   );
 }
