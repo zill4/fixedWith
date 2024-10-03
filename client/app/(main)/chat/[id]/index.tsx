@@ -123,8 +123,16 @@ export default function ChatScreen() {
   };
 
   const updateFirestoreMessages = async (newMessages: Message[]) => {
-    if (!project || !user) return;
-  
+    // if(!project)
+    // {
+    //   console.log('No project');
+    //   return;
+    // }
+    // if (!user)
+    // {
+    //   console.log('No user');
+    //   return;
+    // }
     try {
       const db = getFirestore();
       const projectRef = doc(db, 'projects', project.id);
@@ -141,6 +149,7 @@ export default function ChatScreen() {
       });
     } catch (error) {
       console.error('Error updating messages:', error);
+      console.log('Error updating messages:', error);
       Alert.alert('Error', 'Failed to update messages. Please try again.');
     }
   };
@@ -216,7 +225,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Image source={{ uri: project.image || mechanicImageTemp }} style={styles.avatar} />
-          <Text style={styles.headerTitle}>{project.type} Issue - {carProfile.make} {carProfile.model}</Text>
+          <Text style={styles.headerTitle}>{project.type} Issue  {carProfile.make} {carProfile.model}</Text>
         </View>
         <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
           <Text style={styles.quoteButtonText}>View Quote</Text>

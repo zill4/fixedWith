@@ -209,9 +209,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 10,
   },
+  jsonContainer: {
+    marginBottom: 10,
+    backgroundColor: '#F0F0F0',
+    padding: 10,
+    borderRadius: 5,
+  },
   value: {
     fontSize: 16,
     marginBottom: 5,
+  },
+  title: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  jsonText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
   },
   stepContainer: {
     flexDirection: 'row',
