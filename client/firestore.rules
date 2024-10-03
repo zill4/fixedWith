@@ -1,41 +1,45 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     // User profiles
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+
       // Car profiles subcollection
       match /profiles/{profileId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
-    
+
     // Projects collection
     match /projects/{projectId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-
       // Allow create if the user is authenticated and the userId field matches their uid
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // Allow read and update if the user is authenticated and the userId field matches their uid
-      allow read, update: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // Optionally, allow delete with the same conditions as read and update
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
 
-      // Messages field within projects
-      allow update: if request.auth != null && 
-                    resource.data.userId == request.auth.uid && 
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['messages']);
-    }
+      // Allow read if the user is authenticated and the userId in resource matches their uid
+      allow read: if request.auth != null &&
+                  resource.data.userId == request.auth.uid;
 
-    match /projects/{projectId} {
+      // Allow update if:
+      // - The user is authenticated
+      // - The userId in the resource matches their uid
+      // - The userId and createdAt fields are not being changed
+      allow update: if request.auth != null &&
+                    resource.data.userId == request.auth.uid &&
+                    (
+                      !('userId' in request.resource.data) ||
+                      request.resource.data.userId == resource.data.userId
+                    ) &&
+                    (
+                      !('createdAt' in request.resource.data) ||
+                      request.resource.data.createdAt == resource.data.createdAt
+                    );
 
-      // Allow updating the messages field
-      allow update: if request.auth != null && 
-                    resource.data.userId == request.auth.uid && 
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['messages']);
+      // Allow delete if the user is authenticated and the userId matches their uid
+      allow delete: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
     }
   }
 }
