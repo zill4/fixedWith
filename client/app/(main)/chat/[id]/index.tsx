@@ -6,6 +6,7 @@ import Header from '../../../../components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc, getFirestore, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { sendToClaude, ClaudeMessage } from '@/components/SendToClaude';
+import MessageParser from '@/components/MessageParser';
 
 interface CarProfile {
   id: string;
@@ -227,7 +228,8 @@ export default function ChatScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
-            <Text style={styles.messageText}>{item.text}</Text>
+            {/* <Text style={styles.messageText}>{item.text}</Text> */}
+            <MessageParser message={item.text} />
           </View>
         )}
       />
