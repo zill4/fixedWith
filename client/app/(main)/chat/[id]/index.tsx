@@ -54,11 +54,12 @@ export default function ChatScreen() {
       setIsLoading(false);
       return;
     }
-  
+
     setIsLoading(true);
     const db = getFirestore();
     const projectRef = doc(db, 'projects', id as string);
-    
+    let carProfileData = null;
+
     try {
       const projectSnap = await getDoc(projectRef);
       if (projectSnap.exists()) {
@@ -74,15 +75,20 @@ export default function ChatScreen() {
         };
         setProject(formattedProject);
         setMessages(formattedProject.messages);
-  
+
         // Fetch the associated car profile
         const carProfileRef = doc(db, 'users', user.uid, 'profiles', formattedProject.carProfileId);
         const carProfileSnap = await getDoc(carProfileRef);
         if (carProfileSnap.exists()) {
-          const carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
+          carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
           setCarProfile({ id: carProfileSnap.id, ...carProfileData });
         } else {
           console.log("No such car profile!");
+        }
+
+        // Check if we need to make the initial Claude request
+        if (formattedProject.messages.length === 0 && carProfileData !== null) {
+          await handleInitialClaudeRequest(formattedProject, carProfileData as CarProfile);
         }
       } else {
         console.log("No such project!");
@@ -93,6 +99,69 @@ export default function ChatScreen() {
       setIsLoading(false);
     }
   }, [user, id]);
+
+  const handleInitialClaudeRequest = async (project: Project, carProfile: CarProfile) => {
+    const initialMessage = `Vehicle Info: ${JSON.stringify(carProfile)}\nProblem: ${project.problemDescription}`;
+    const claudeResponse = await sendToClaude({ ...project, carProfile }, initialMessage, []);
+    if (claudeResponse) {
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        text: claudeResponse.textResponse,
+        userId: 'ai',
+        createdAt: new Date()
+      };
+      setMessages([aiMessage]);
+      await updateFirestoreMessages([aiMessage]);
+    }
+  };
+
+  const updateFirestoreMessages = async (newMessages: Message[]) => {
+    if (!project) return;
+
+    const db = getFirestore();
+    const projectRef = doc(db, 'projects', project.id);
+    await updateDoc(projectRef, {
+      messages: newMessages.map(msg => ({
+        ...msg,
+        createdAt: Timestamp.fromDate(msg.createdAt)
+      }))
+    });
+  };
+
+  const handleSend = async () => {
+    if (newMessage.trim() && user && project) {
+      const userMsg: Message = {
+        id: Date.now().toString(),
+        text: newMessage,
+        userId: user.uid,
+        createdAt: new Date()
+      };
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
+      setNewMessage('');
+
+      await updateFirestoreMessages(updatedMessages);
+
+      const messageHistory: ClaudeMessage[] = updatedMessages.map(msg => ({
+        role: msg.userId === 'ai' ? 'assistant' : 'user',
+        content: msg.text
+      }));
+
+      const claudeResponse = await sendToClaude(project, newMessage, messageHistory);
+      if (claudeResponse) {
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: claudeResponse.textResponse,
+          userId: 'ai',
+          createdAt: new Date()
+        };
+        const finalMessages = [...updatedMessages, aiMsg];
+        setMessages(finalMessages);
+        
+        await updateFirestoreMessages(finalMessages);
+      }
+    }
+  };
 
   useEffect(() => {
     navigation.setOptions({
@@ -138,27 +207,26 @@ export default function ChatScreen() {
         </View>
     
         <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
-              <Text style={styles.messageText}>{item.text}</Text>
-            </View>
-          )}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
+            <Text style={styles.messageText}>{item.text}</Text>
+          </View>
+        )}
+      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type a new message"
         />
-    
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={newMessage}
-            onChangeText={setNewMessage}
-            placeholder="Type a new message"
-          />
-          <TouchableOpacity onPress={() => console.log('send')}>
-            <Ionicons name="send" size={24} color="#DE2020" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView> );
+        <TouchableOpacity onPress={handleSend}>
+          <Ionicons name="send" size={24} color="#DE2020" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView> );
 }
 
 

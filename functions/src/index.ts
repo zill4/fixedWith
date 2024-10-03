@@ -9,12 +9,19 @@ const anthropic = new Anthropic({
 
 export const chatWithClaude = functions.https.onCall(async (data) => {
   try {
-    const { message } = data;
+    const { messages } = data;
+
+    // Ensure all messages have the required 'content' field and are not empty
+    const validMessages = messages.filter(msg => msg.content && msg.content.trim() !== '');
+
+    if (validMessages.length === 0) {
+      throw new Error('No valid messages provided');
+    }
 
     const response = await anthropic.messages.create({
       model: "claude-3-haiku-20240307",
       max_tokens: 1000,
-      messages: [{ role: "user", content: message }],
+      messages: validMessages,
     });
 
     // Extract text content from the response
@@ -23,7 +30,10 @@ export const chatWithClaude = functions.https.onCall(async (data) => {
       .map(block => (block as { type: 'text', text: string }).text)
       .join('\n');
 
-    return { message: textContent };
+    return { 
+      textResponse: textContent,
+      jsonResponse: {} // You may want to parse JSON from the response if needed
+    };
   } catch (error) {
     console.error("Error calling Claude API:", error);
     throw new functions.https.HttpsError(
