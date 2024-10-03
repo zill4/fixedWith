@@ -56,10 +56,7 @@ export const sendToClaude = async (
         }
       ];
     } else {
-      messages = [
-        ...history,
-        { role: 'user', content: message }
-      ];
+      messages = history.concat({ role: 'user', content: message });
     }
 
     const result = await chatWithClaude({ messages });

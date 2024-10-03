@@ -6,7 +6,7 @@ import Header from '../../../components/Header';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import ProfileCard from '@/components/cards/ProfileCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { getFirestore, collection, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, getDoc, getDocs, Timestamp } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function NewScreen() {
@@ -81,27 +81,26 @@ export default function NewScreen() {
 
   const handleSubmit = async () => {
     if (!user) {
-      console.error('Error', 'You must be logged in to create a project');
+      console.error('log', 'You must be logged in to create a project');
       Alert.alert('Error', 'You must be logged in to create a project');
       return;
     }
-
+  
     if (!selectedCarProfileId) {
-      console.error('Error', 'Please select a car profile');
+      console.error('log', 'Please select a car profile');
       Alert.alert('Error', 'Please select a car profile');
       return;
     }
-
-
+  
     if (!problemDescription) {
-      console.error('Error', 'Please provide a problem description');
+      console.error('log', 'Please provide a problem description');
       Alert.alert('Error', 'Please provide a problem description');
       return;
     }
-
+  
     const db = getFirestore();
     const projectsCollection = collection(db, 'projects');
-
+  
     try {
       const newProject = {
         userId: user.uid,
@@ -110,20 +109,20 @@ export default function NewScreen() {
         image: image || null,
         imageDescription,
         carProfileId: selectedCarProfileId,
-        createdAt: new Date(),
+        createdAt: Timestamp.fromDate(new Date()), // Use Firestore Timestamp
+        messages: [], // Initialize messages as empty array
       };
       const docRef = await addDoc(projectsCollection, newProject);
       Alert.alert('Success', 'Your project has been created');
       setProblemDescription('');
       setImage(null);
       setActiveTab('Repair');
-      router.push('/chat/' + docRef.id as any);
+      router.push('/chat/' + docRef.id);
     } catch (error) {
       console.error('Error creating project:', error);
       Alert.alert('Error', 'Failed to create project');
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>

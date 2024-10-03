@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, FlatList, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, FlatList, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import Header from '../../../../components/Header';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, getDoc, getFirestore, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { sendToClaude } from '@/components/SendToClaude';
-import { ClaudeMessage } from '@/components/SendToClaude';
+import { doc, getDoc, getFirestore, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
+import { sendToClaude, ClaudeMessage } from '@/components/SendToClaude';
 
 interface CarProfile {
   id: string;
@@ -47,48 +45,55 @@ export default function ChatScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
 
-  const mechanicImageTemp = "https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080"
+  const mechanicImageTemp = "https://example.com/default-image.jpg";
 
   const fetchProjectAndCarProfile = useCallback(async () => {
     if (!user || !id) {
       setIsLoading(false);
       return;
     }
-
+  
     setIsLoading(true);
     const db = getFirestore();
     const projectRef = doc(db, 'projects', id as string);
-    let carProfileData = null;
-
+  
     try {
       const projectSnap = await getDoc(projectRef);
       if (projectSnap.exists()) {
-        const projectData = projectSnap.data() as Omit<Project, 'id'>;
+        const projectData = projectSnap.data();
+  
         const formattedProject: Project = {
           id: projectSnap.id,
           ...projectData,
-          createdAt: projectData.createdAt,
-          messages: projectData.messages ? projectData.messages.map(msg => ({
+          createdAt: projectData.createdAt.toDate(), // Convert Timestamp to Date
+          messages: projectData.messages ? projectData.messages.map((msg: any) => ({
             ...msg,
-            createdAt: msg.createdAt
-          })) : []
+            createdAt: msg.createdAt.toDate(), // Convert Timestamp to Date
+          })) : [],
+          carProfileId: projectData.carProfileId,
+          image: projectData.image || '',
+          imageDescription: projectData.imageDescription || '',
+          problemDescription: projectData.problemDescription || '',
+          type: projectData.type || '',
+          userId: user.uid
         };
+  
         setProject(formattedProject);
         setMessages(formattedProject.messages);
-
+  
         // Fetch the associated car profile
         const carProfileRef = doc(db, 'users', user.uid, 'profiles', formattedProject.carProfileId);
         const carProfileSnap = await getDoc(carProfileRef);
         if (carProfileSnap.exists()) {
-          carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
+          const carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
           setCarProfile({ id: carProfileSnap.id, ...carProfileData });
+  
+          // Only make the initial Claude request if there are no messages
+          if (formattedProject.messages.length === 0) {
+            await handleInitialClaudeRequest(formattedProject, carProfileData as CarProfile);
+          }
         } else {
           console.log("No such car profile!");
-        }
-
-        // Check if we need to make the initial Claude request
-        if (formattedProject.messages.length === 0 && carProfileData !== null) {
-          await handleInitialClaudeRequest(formattedProject, carProfileData as CarProfile);
         }
       } else {
         console.log("No such project!");
@@ -108,24 +113,35 @@ export default function ChatScreen() {
         id: Date.now().toString(),
         text: claudeResponse.textResponse,
         userId: 'ai',
-        createdAt: new Date()
+        createdAt: new Date(), // JavaScript Date object
       };
-      setMessages([aiMessage]);
-      await updateFirestoreMessages([aiMessage]);
+      const updatedMessages = [aiMessage];
+      setMessages(updatedMessages);
+      await updateFirestoreMessages(updatedMessages);
     }
   };
 
   const updateFirestoreMessages = async (newMessages: Message[]) => {
-    if (!project) return;
-
-    const db = getFirestore();
-    const projectRef = doc(db, 'projects', project.id);
-    await updateDoc(projectRef, {
-      messages: newMessages.map(msg => ({
-        ...msg,
-        createdAt: Timestamp.fromDate(msg.createdAt)
-      }))
-    });
+    if (!project || !user) return;
+  
+    try {
+      const db = getFirestore();
+      const projectRef = doc(db, 'projects', project.id);
+  
+      const messagesToUpdate = newMessages.map(msg => ({
+        id: msg.id,
+        text: msg.text,
+        userId: msg.userId,
+        createdAt: Timestamp.fromDate(msg.createdAt),
+      }));
+  
+      await updateDoc(projectRef, {
+        messages: messagesToUpdate,
+      });
+    } catch (error) {
+      console.error('Error updating messages:', error);
+      Alert.alert('Error', 'Failed to update messages. Please try again.');
+    }
   };
 
   const handleSend = async () => {
@@ -134,30 +150,30 @@ export default function ChatScreen() {
         id: Date.now().toString(),
         text: newMessage,
         userId: user.uid,
-        createdAt: new Date()
+        createdAt: new Date(), // JavaScript Date object
       };
       const updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
       setNewMessage('');
-
+  
       await updateFirestoreMessages(updatedMessages);
-
+  
       const messageHistory: ClaudeMessage[] = updatedMessages.map(msg => ({
         role: msg.userId === 'ai' ? 'assistant' : 'user',
-        content: msg.text
+        content: msg.text,
       }));
-
+  
       const claudeResponse = await sendToClaude(project, newMessage, messageHistory);
       if (claudeResponse) {
         const aiMsg: Message = {
           id: (Date.now() + 1).toString(),
           text: claudeResponse.textResponse,
           userId: 'ai',
-          createdAt: new Date()
+          createdAt: new Date(), // JavaScript Date object
         };
         const finalMessages = [...updatedMessages, aiMsg];
         setMessages(finalMessages);
-        
+  
         await updateFirestoreMessages(finalMessages);
       }
     }
@@ -169,44 +185,44 @@ export default function ChatScreen() {
     });
     fetchProjectAndCarProfile();
   }, [navigation, fetchProjectAndCarProfile]);
-  
-    const handleViewQuote = () => {
-      router.push(`/chat/${id}/diagnosis` as any);
-    };
-  
-    if (isLoading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
-      );
-    }
-    
-    if (!project || !carProfile) {
-      return (
-        <View style={styles.container}>
-          <Text>Project or Car Profile not found</Text>
-        </View>
-      );
-    }
-    
+
+  const handleViewQuote = () => {
+    router.push(`/chat/${id}/diagnosis` as any);
+  };
+
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Header />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.replace('/(main)/chat')}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <View style={styles.headerInfo}>
-            <Image source={{uri: project.image || mechanicImageTemp}} style={styles.avatar} />
-            <Text style={styles.headerTitle}>{project.type} Issue - {carProfile.make} {carProfile.model}</Text>
-          </View>
-          <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
-            <Text style={styles.quoteButtonText}>View Quote</Text>
-          </TouchableOpacity>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (!project || !carProfile) {
+    return (
+      <View style={styles.container}>
+        <Text>Project or Car Profile not found</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Header />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.replace('/(main)/chat')}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <View style={styles.headerInfo}>
+          <Image source={{ uri: project.image || mechanicImageTemp }} style={styles.avatar} />
+          <Text style={styles.headerTitle}>{project.type} Issue - {carProfile.make} {carProfile.model}</Text>
         </View>
-    
-        <FlatList
+        <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
+          <Text style={styles.quoteButtonText}>View Quote</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -226,7 +242,8 @@ export default function ChatScreen() {
           <Ionicons name="send" size={24} color="#DE2020" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView> );
+    </SafeAreaView>
+  );
 }
 
 
