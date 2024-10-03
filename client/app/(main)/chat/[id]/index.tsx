@@ -5,21 +5,35 @@ import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import Header from '../../../../components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc, getFirestore, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { sendToClaude } from '@/components/SendToClaude';
+import { ClaudeMessage } from '@/components/SendToClaude';
 
-interface Message {
-  text: string;
-  createdAt: Date;
-  userId: string;
+interface CarProfile {
   id: string;
+  make: string;
+  model: string;
+  year: number;
+  // Add other relevant fields
 }
 
 interface Project {
   id: string;
-  type: 'Repair' | 'Mod';
-  problemDescription: string;
+  carProfileId: string;
   createdAt: Date;
   image: string | null;
+  imageDescription: string;
+  problemDescription: string;
+  type: 'Repair' | 'Mod';
+  userId: string;
   messages: Message[];
+}
+
+interface Message {
+  id: string;
+  text: string;
+  userId: string;
+  createdAt: Date;
 }
 
 export default function ChatScreen() {
@@ -28,49 +42,53 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [project, setProject] = useState<Project | null>(null);
+  const [carProfile, setCarProfile] = useState<CarProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
   const { user } = useAuth();
 
-  const fetchProject = useCallback(async () => {
+  const mechanicImageTemp = "https://images.unsplash.com/photo-1680552413523-874b87f75475?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHw5fHx0b3lvdGElMjA4NnxlbnwxfHx8fDE3Mjc1ODc0MjV8MA&ixlib=rb-4.0.3&q=80&w=1080"
+
+  const fetchProjectAndCarProfile = useCallback(async () => {
     if (!user || !id) {
       setIsLoading(false);
       return;
     }
+  
     setIsLoading(true);
     const db = getFirestore();
     const projectRef = doc(db, 'projects', id as string);
+    
     try {
-      const docSnap = await getDoc(projectRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Omit<Project, 'id'>;
-        const projectData = {
-          id: docSnap.id,
-          ...data,
-          createdAt: data.createdAt,
-          messages: data.messages ? data.messages.map(msg => ({
+      const projectSnap = await getDoc(projectRef);
+      if (projectSnap.exists()) {
+        const projectData = projectSnap.data() as Omit<Project, 'id'>;
+        const formattedProject: Project = {
+          id: projectSnap.id,
+          ...projectData,
+          createdAt: projectData.createdAt,
+          messages: projectData.messages ? projectData.messages.map(msg => ({
             ...msg,
             createdAt: msg.createdAt
           })) : []
         };
-        setProject(projectData);
-        
-        // Set the initial message as the problem description
-        if (projectData.messages.length === 0) {
-          setMessages([{
-            id: '0',
-            text: projectData.problemDescription,
-            userId: user.uid,
-            createdAt: projectData.createdAt
-          }]);
+        setProject(formattedProject);
+        setMessages(formattedProject.messages);
+  
+        // Fetch the associated car profile
+        const carProfileRef = doc(db, 'users', user.uid, 'profiles', formattedProject.carProfileId);
+        const carProfileSnap = await getDoc(carProfileRef);
+        if (carProfileSnap.exists()) {
+          const carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
+          setCarProfile({ id: carProfileSnap.id, ...carProfileData });
         } else {
-          setMessages(projectData.messages);
+          console.log("No such car profile!");
         }
       } else {
         console.log("No such project!");
       }
     } catch (error) {
-      console.error('Error fetching project:', error);
+      console.error('Error fetching project and car profile:', error);
     } finally {
       setIsLoading(false);
     }
@@ -80,97 +98,67 @@ export default function ChatScreen() {
     navigation.setOptions({
       headerShown: false,
     });
-    fetchProject();
-  }, [navigation, fetchProject]);
+    fetchProjectAndCarProfile();
+  }, [navigation, fetchProjectAndCarProfile]);
   
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
-  if (!project) {
-    return (
-      <View style={styles.container}>
-        <Text>Project not found</Text>
-      </View>
-    );
-  }
-
-  const handleSend = async () => {
-    if (newMessage.trim() && user) {
-      const newMsg = {
-        id: Date.now().toString(),
-        text: newMessage,
-        userId: user.uid,
-        createdAt: new Date()
-      };
-      setMessages(prevMessages => [...prevMessages, newMsg]);
-      setNewMessage('');
-
-      // Update Firestore
-      const db = getFirestore();
-      const projectRef = doc(db, 'projects', id as string);
-      try {
-        await updateDoc(projectRef, {
-          messages: arrayUnion({
-            ...newMsg,
-            createdAt: Timestamp.fromDate(newMsg.createdAt)
-          })
-        });
-      } catch (error) {
-        console.error('Error updating messages in Firestore:', error);
-      }
-    }
-  };
-
-  const handleViewQuote = () => {
-    router.push(`/chat/${id}/diagnosis` as any);
-  };
-
-  const mechanicImageTemp: string = 'https://images.unsplash.com/photo-1552656967-7a0991a13906?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wyMDUzMDJ8MHwxfHNlYXJjaHwxfHxlbmdpbmV8ZW58MXx8fHwxNzI3NTkwNjkzfDA&ixlib=rb-4.0.3&q=80&w=1080'
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <Header />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(main)/chat')}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Image source={{uri: mechanicImageTemp}} style={styles.avatar} />
-          <Text style={styles.headerTitle}>{project.type} Issue</Text>
+    const handleViewQuote = () => {
+      router.push(`/chat/${id}/diagnosis` as any);
+    };
+  
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
         </View>
-        <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
-          <Text style={styles.quoteButtonText}>View Quote</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
-            <Text style={styles.messageText}>{item.text}</Text>
+      );
+    }
+    
+    if (!project || !carProfile) {
+      return (
+        <View style={styles.container}>
+          <Text>Project or Car Profile not found</Text>
+        </View>
+      );
+    }
+    
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.replace('/(main)/chat')}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Image source={{uri: project.image || mechanicImageTemp}} style={styles.avatar} />
+            <Text style={styles.headerTitle}>{project.type} Issue - {carProfile.make} {carProfile.model}</Text>
           </View>
-        )}
-      />
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newMessage}
-          onChangeText={setNewMessage}
-          placeholder="Type a new message"
+          <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
+            <Text style={styles.quoteButtonText}>View Quote</Text>
+          </TouchableOpacity>
+        </View>
+    
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
+              <Text style={styles.messageText}>{item.text}</Text>
+            </View>
+          )}
         />
-        <TouchableOpacity onPress={handleSend}>
-          <Ionicons name="send" size={24} color="#DE2020" />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+    
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={newMessage}
+            onChangeText={setNewMessage}
+            placeholder="Type a new message"
+          />
+          <TouchableOpacity onPress={() => console.log('send')}>
+            <Ionicons name="send" size={24} color="#DE2020" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView> );
 }
 
 
@@ -248,5 +236,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     marginRight: 10,
-  },
+  }
 });

@@ -23,6 +23,11 @@ service cloud.firestore {
       
       // Optionally, allow delete with the same conditions as read and update
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Messages field within projects
+      allow update: if request.auth != null && 
+                    resource.data.userId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['messages']);
     }
   }
 }

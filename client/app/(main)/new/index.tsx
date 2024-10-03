@@ -41,7 +41,6 @@ export default function NewScreen() {
     const db = getFirestore();
      const profilesCollection = collection(db, 'users', user.uid, 'profiles');
     //const profilesCollection = doc(db, 'profiles', user.uid);
-    console.log('profilesCollections', profilesCollection);
     try {
       const querySnapshot = await getDocs(profilesCollection);
       const profiles = querySnapshot.docs.map(doc => ({
@@ -113,9 +112,7 @@ export default function NewScreen() {
         carProfileId: selectedCarProfileId,
         createdAt: new Date(),
       };
-      console.log('newProject', newProject);
       const docRef = await addDoc(projectsCollection, newProject);
-      console.log('Project created with ID: ', docRef.id);
       Alert.alert('Success', 'Your project has been created');
       setProblemDescription('');
       setImage(null);
