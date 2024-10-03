@@ -18,10 +18,10 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
   const tabs: TabInfo[] = [
     { name: 'home', icon: 'home-outline', activeIcon: 'home' },
-    { name: 'build-repair', icon: 'construct-outline', activeIcon: 'construct' },
+    // { name: 'build-repair', icon: 'construct-outline', activeIcon: 'construct' },
     { name: 'new', icon: 'add-circle-outline', activeIcon: 'add-circle' },
     { name: 'chat', icon: 'chatbubble-outline', activeIcon: 'chatbubble' },
-    { name: 'quote', icon: 'document-outline', activeIcon: 'document' },
+    // { name: 'quote', icon: 'document-outline', activeIcon: 'document' },
   ];
 
   return (
