@@ -183,7 +183,7 @@ export default function NewScreen() {
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.sectionTitle}>Add Images</Text>
+        {/* <Text style={styles.sectionTitle}>Add Images</Text>
         <View style={styles.imageContainer}>
           <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
             <Ionicons name="add" size={24} color="#DE2020" />
@@ -192,7 +192,7 @@ export default function NewScreen() {
           {image && (
             <Image key={0} source={{ uri: image }} style={styles.image} />
           )}
-        </View>
+        </View> */}
         <TouchableOpacity style={styles.confirmButton} onPress={handleSubmit}>
         <Text style={styles.confirmButtonText}>Confirm</Text>
         </TouchableOpacity>
@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
   
     confirmButton: {
         backgroundColor: '#DE2020',
+        marginTop: 20,
         padding: 15,
         borderRadius: 8,
         alignItems: 'center',

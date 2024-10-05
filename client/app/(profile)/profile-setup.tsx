@@ -1,23 +1,51 @@
-import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Text, Image, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getFirestore, doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface ProfileData {
+  make: string;
+  model: string;
+  year: string;
+  trim: string;
+}
+
 export default function ProfileSetupScreen() {
-  const [make, setMake] = React.useState('');
-  const [model, setModel] = React.useState('');
-  const [year, setYear] = React.useState('');
-  const [trim, setTrim] = React.useState('');
+  const [profile, setProfile] = useState<ProfileData>({
+    make: '',
+    model: '',
+    year: '',
+    trim: '',
+  });
   const router = useRouter();
   const { user } = useAuth();
+  const { profileId } = useLocalSearchParams<{ profileId: string }>();
 
-  const handleContinue = () => {
-    // TODO: Save car information
-    router.replace('/(main)/home');
-    // TODO: Fix car go back
-    // router.back();
+  useEffect(() => {
+    if (profileId) {
+      fetchProfileData();
+    }
+  }, [profileId]);
+
+  const fetchProfileData = async () => {
+    if (!user || !profileId) return;
+    
+    const db = getFirestore();
+    const profileRef = doc(db, 'users', user.uid, 'profiles', profileId);
+    
+    try {
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        const data = profileSnap.data() as ProfileData;
+        setProfile(data);
+        console.log('Profile data:', data);
+      }
+    } catch (error) {
+      console.log('Error fetching profile data:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -25,28 +53,31 @@ export default function ProfileSetupScreen() {
       Alert.alert('Error', 'You must be logged in to save a profile');
       return;
     }
-  
+
+    if (!profile.make || !profile.model || !profile.year || !profile.trim) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
     const db = getFirestore();
-    const profilesCollection = collection(db, 'users', user.uid, 'profiles');
-  
+    const profileRef = profileId
+      ? doc(db, 'users', user.uid, 'profiles', profileId)
+      : doc(db, 'users', user.uid, 'profiles');
+
     try {
-      const newProfile = {
-        name: make + ' ' + model,
-        spec: trim,
-        year,
-        mileage: '0 miles',
-        modifications: 'None',
-        maintenance: 'Regular',
-        engine: 'Not specified',
-        image: 'https://example.com/default-car-image.jpg',
-        createdAt: new Date(),
-      };
-  
-      const docRef = await addDoc(profilesCollection, newProfile);
-      console.log('Car profile created with ID: ', docRef.id);
-  
-      Alert.alert('Success', 'Car profile saved successfully');
-      router.replace('/(main)/home');
+      if (profileId) {
+        await updateDoc(profileRef, profile as any);
+        console.log('Car profile updated with ID: ', profileId);
+      } else {
+        await setDoc(profileRef, {
+          ...profile,
+          createdAt: new Date(),
+        });
+        console.log('Car profile created with ID: ', profileRef.id);
+      }
+
+      Alert.alert('Success', `Car profile ${profileId ? 'updated' : 'saved'} successfully`);
+      router.replace('/profiles');
     } catch (error) {
       console.error('Error saving car profile:', error);
       Alert.alert('Error', 'Failed to save car profile');
@@ -60,45 +91,41 @@ export default function ProfileSetupScreen() {
         <Text style={styles.headerText}>FixedWith</Text>
       </View>
 
-      <Text style={styles.title}>Enter your car information:</Text>
+      <Text style={styles.title}>{profileId ? 'Edit' : 'Enter'} your car information:</Text>
 
       <TextInput
         placeholder="Make"
-        value={make}
-        onChangeText={setMake}
+        value={profile.make}
+        onChangeText={(text) => setProfile({ ...profile, make: text })}
         style={styles.input}
       />
       <TextInput
         placeholder="Model"
-        value={model}
-        onChangeText={setModel}
+        value={profile.model}
+        onChangeText={(text) => setProfile({ ...profile, model: text })}
         style={styles.input}
       />
       <TextInput
         placeholder="Year"
-        value={year}
-        onChangeText={setYear}
+        value={profile.year}
+        onChangeText={(text) => setProfile({ ...profile, year: text })}
         style={styles.input}
         keyboardType="numeric"
       />
       <TextInput
         placeholder="Trim"
-        value={trim}
-        onChangeText={setTrim}
+        value={profile.trim}
+        onChangeText={(text) => setProfile({ ...profile, trim: text })}
         style={styles.input}
       />
 
-      <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-        <Text style={styles.continueButtonText}>Back</Text>
-      </TouchableOpacity>
-
       <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-        <Text style={styles.saveButtonText}>Save Profile</Text>
+        <Text style={styles.saveButtonText}>{profileId ? 'Update' : 'Save'} Profile</Text>
       </TouchableOpacity>
 
-      {/* <TouchableOpacity style={styles.skipButton}>
-        <Text style={styles.skipButtonText}>Skip</Text>
-      </TouchableOpacity> */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -133,41 +160,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 16,
   },
-  continueButton: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  continueButtonText: {
-    color: 'black',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   saveButton: {
-    backgroundColor: 'white',
+    backgroundColor: '#DE2020',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   saveButtonText: {
-    color: 'black',
+    color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  skipButton: {
+  backButton: {
+    backgroundColor: 'white',
     padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  skipButtonText: {
-    color: '#888',
-    fontSize: 16,
+  backButtonText: {
+    color: 'black',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

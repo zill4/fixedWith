@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
 let tempEngineImage: string =  'https://assets.api.uizard.io/api/cdn/stream/7294fa89-54fb-4ac9-914d-c5b44f98c77e.png'
-
+let tempProfileImage: string = 'https://images.unsplash.com/photo-1505545121909-2d48e22dede6?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 const DiagnosisItem = ({ icon, label }: { icon: any, label: string }) => {
   const router = useRouter();
 
@@ -97,7 +97,7 @@ export default function HomeScreen() {
       <ScrollView>
         <Header />
         <ProfileCard 
-          image={tempEngineImage}
+          image={tempProfileImage}
           title={profileCount > 0 ? `View Car Profiles: ${profileCount}` : "Create a car profile"}
           func={handleProfilePress}
           isSelected={false}

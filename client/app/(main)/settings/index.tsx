@@ -33,12 +33,15 @@ export default function SettingsScreen() {
           <Ionicons name="car" size={24} color="#ff0000" />
           <Text style={styles.title}>AutoSnap</Text>
         </View>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
+        {/* <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save</Text>
+        </TouchableOpacity> */}
       </View>
 
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Update Password</Text>
         <TextInput
           style={styles.input}
@@ -61,9 +64,9 @@ export default function SettingsScreen() {
           value={confirmNewPassword}
           onChangeText={setConfirmNewPassword}
         />
-      </View>
+      </View> */}
 
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment Information</Text>
         <TextInput
           style={styles.input}
@@ -85,9 +88,9 @@ export default function SettingsScreen() {
           value={cvv}
           onChangeText={setCvv}
         />
-      </View>
+      </View> */}
 
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <View style={styles.notificationItem}>
           <Text>Email</Text>
@@ -107,12 +110,12 @@ export default function SettingsScreen() {
             thumbColor={pushNotifications ? "#f4f3f4" : "#f4f3f4"}
           />
         </View>
-      </View>
+      </View> */}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Help</Text>
         <Text style={styles.helpText}>
-          For assistance with your account or the AutoSnap app, please visit our Help Center or contact support.
+          For assistance with your account or the FixedWith app, contact Justin@crispcode.io
         </Text>
       </View>
 
@@ -182,6 +185,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  backButton: {
+    marginLeft: 16,
   },
   helpText: {
     color: '#666',
