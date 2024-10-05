@@ -9,7 +9,7 @@ interface PartsAndToolsComponentProps {
 }
 
 function PartsAndToolsComponent({ data }: PartsAndToolsComponentProps) {
-  console.log("PartsAndToolsComponent data:", data);
+//   console.log("PartsAndToolsComponent data:", data);
   
   const renderItem = ({ item }: { item: string }) => (
     <View style={styles.itemContainer}>

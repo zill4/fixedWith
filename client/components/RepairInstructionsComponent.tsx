@@ -8,7 +8,7 @@ interface RepairInstructionsComponentProps {
 }
 
 function RepairInstructionsComponent({ data }: RepairInstructionsComponentProps) {
-  console.log("RepairInstructionsComponent data:", data);
+//   console.log("RepairInstructionsComponent data:", data);
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
     <View style={styles.stepContainer}>

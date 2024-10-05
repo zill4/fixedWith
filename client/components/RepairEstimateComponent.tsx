@@ -13,7 +13,8 @@ interface RepairEstimateComponentProps {
 }
 
 const RepairEstimateComponent: React.FC<RepairEstimateComponentProps> = ({ data }) => {
-  console.log("RepairEstimateComponent data:", data);
+//   console.log("RepairEstimateComponent data:", data);
+
   return (
     <View style={styles.outerContainer}>
       <View style={styles.container}>
