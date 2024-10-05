@@ -284,7 +284,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Image source={{ uri: project.image || mechanicImageTemp }} style={styles.avatar} />
-          <Text style={styles.headerTitle}>{project.type} Issue  {carProfile.make} {carProfile.model}</Text>
+          <Text style={styles.headerTitle}>{project.type} - {carProfile.make}</Text>
         </View>
         <TouchableOpacity style={styles.quoteButton} onPress={handleViewQuote}>
           <Text style={styles.quoteButtonText}>View Quote</Text>

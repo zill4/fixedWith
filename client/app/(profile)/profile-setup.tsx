@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileData {
@@ -60,20 +60,19 @@ export default function ProfileSetupScreen() {
     }
 
     const db = getFirestore();
-    const profileRef = profileId
-      ? doc(db, 'users', user.uid, 'profiles', profileId)
-      : doc(db, 'users', user.uid, 'profiles');
+    const profilesCollectionRef = collection(db, 'users', user.uid, 'profiles');
 
     try {
       if (profileId) {
-        await updateDoc(profileRef, profile as any);
+        const profileDocRef = doc(profilesCollectionRef, profileId);
+        await updateDoc(profileDocRef, profile as any);
         console.log('Car profile updated with ID: ', profileId);
       } else {
-        await setDoc(profileRef, {
+        const newProfileRef = await addDoc(profilesCollectionRef, {
           ...profile,
           createdAt: new Date(),
         });
-        console.log('Car profile created with ID: ', profileRef.id);
+        console.log('Car profile created with ID: ', newProfileRef.id);
       }
 
       Alert.alert('Success', `Car profile ${profileId ? 'updated' : 'saved'} successfully`);

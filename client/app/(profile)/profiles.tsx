@@ -8,14 +8,19 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileData {
   id: string;
-  name: string;
-  spec: string;
+  make: string;
+  model: string;
   year: string;
-  mileage: string;
-  modifications: string;
-  maintenance: string;
-  engine: string;
-  image: string;
+  trim: string;
+  createdAt: Date;
+  // Optional fields
+  name?: string;
+  spec?: string;
+  mileage?: string;
+  modifications?: string;
+  maintenance?: string;
+  engine?: string;
+  image?: string;
 }
 
 export default function ProfilesScreen() {
@@ -41,7 +46,8 @@ export default function ProfilesScreen() {
       const querySnapshot = await getDocs(profilesCollection);
       const fetchedProfiles = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() // Convert Firestore Timestamp to Date
       } as ProfileData));
       setProfiles(fetchedProfiles);
     } catch (error) {
@@ -92,18 +98,17 @@ export default function ProfilesScreen() {
             <View style={styles.profileHeader}>
               <Image source={{ uri: tempProfilePlaceholderImage }} style={styles.profileImage} />
               <View>
-                <Text style={styles.profileName}>{profile.name}</Text>
-                <Text style={styles.profileSpec}>Spec: {profile.spec}</Text>
+                <Text style={styles.profileName}>{profile.make} {profile.model}</Text>
+                <Text style={styles.profileSpec}>{profile.year} {profile.trim}</Text>
               </View>
             </View>
-
+{/*  Commented out for now, will add back in later
             <View style={styles.infoGrid}>
-              <InfoItem label="Year" value={profile.year} />
-              <InfoItem label="Engine" value={profile.engine} />
-              <InfoItem label="Mileage" value={profile.mileage} />
-              <InfoItem label="Modifications" value={profile.modifications} />
-              <InfoItem label="Maintenance" value={profile.maintenance} />
-            </View>
+              {profile.mileage && <InfoItem label="Mileage" value={profile.mileage} />}
+              {profile.engine && <InfoItem label="Engine" value={profile.engine} />}
+              {profile.modifications && <InfoItem label="Modifications" value={profile.modifications} />}
+              {profile.maintenance && <InfoItem label="Maintenance" value={profile.maintenance} />}
+            </View> */}
 
             <TouchableOpacity style={styles.editButton} onPress={() => handleEditProfile(profile.id)}>
               <Text style={styles.editButtonText}>Edit Car Details</Text>

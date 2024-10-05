@@ -5,25 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../../../../components/Header';
 import { doc, getDoc, getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProjectData } from '@/types/projects';
 
-interface ProjectData {
-  type: 'Repair' | 'Mod';
-  estimate: {
-    expectedRepairTime: string;
-    averageRepairPrice: number;
-    toolsAndMaterials: string[];
-    averageShopPrice: number;
-    repairDifficulty: string;
-    summary: string;
-  };
-  parts_tools: {
-    parts: string[];
-    tools: string[];
-  };
-  instructions: {
-    steps: string[];
-  };
-}
 
 export default function ChatQuoteScreen() {
   const { id } = useLocalSearchParams();
@@ -50,13 +33,16 @@ export default function ChatQuoteScreen() {
     try {
       const projectSnap = await getDoc(projectRef);
       if (projectSnap.exists()) {
-        const data = projectSnap.data() as ProjectData;
+        const data = new ProjectData(projectSnap.data());
+        console.log('raw data:', data);
         setProjectData(data);
       } else {
         console.log("No such project!");
+        Alert.alert('Error', 'Project not found');
       }
     } catch (error) {
       console.error('Error fetching project data:', error);
+      Alert.alert('Error', 'Failed to load project data');
     } finally {
       setIsLoading(false);
     }
@@ -69,8 +55,7 @@ export default function ChatQuoteScreen() {
     }
 
     const db = getFirestore();
-    const { estimate, parts_tools, type } = projectData;
-    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
+    const actionType = projectData.type === 'mod' ? 'Mod' : 'Repair';
 
     try {
       let savedDocId: string;
@@ -82,8 +67,8 @@ export default function ChatQuoteScreen() {
           userId: user.uid,
           createdAt: serverTimestamp(),
           type: 'shop',
-          estimatedCost: estimate.averageShopPrice,
-          summary: estimate.summary,
+          estimatedCost: projectData.estimate.averageShopPrice,
+          summary: `${actionType} - ${projectData.difficulty}`,
         };
 
         const quoteRef = await addDoc(collection(db, 'quotes'), quoteData);
@@ -96,12 +81,12 @@ export default function ChatQuoteScreen() {
           projectId: id,
           userId: user.uid,
           createdAt: serverTimestamp(),
-          type: actionType.toLowerCase(),
-          estimatedCost: estimate.averageRepairPrice,
-          expectedTime: estimate.expectedRepairTime,
-          difficulty: estimate.repairDifficulty,
-          parts: parts_tools.parts,
-          tools: parts_tools.tools,
+          type: projectData.type,
+          estimatedCost: projectData.estimate.averageRepairPrice,
+          expectedTime: projectData.expectedTime,
+          difficulty: projectData.difficulty,
+          parts: projectData.parts_tools.parts,
+          tools: projectData.parts_tools.tools,
         };
 
         const buildRepairRef = await addDoc(collection(db, 'build_repairs'), buildRepairData);
@@ -124,39 +109,43 @@ export default function ChatQuoteScreen() {
 
   const renderQuotesTab = () => {
     if (!projectData) return null;
-    const { estimate, type } = projectData;
-    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
+    const actionType = projectData.type === 'mod' ? 'Mod' : 'Repair';
 
     return (
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteTitle}>Shop Quote</Text>
         <Text style={styles.estimatedCost}>Estimated Shop Cost</Text>
-        <Text style={styles.costAmount}>${estimate.averageShopPrice.toFixed(2)}</Text>
+        <Text style={styles.costAmount}>${projectData.estimate.averageShopPrice.toFixed(2)}</Text>
         <Text style={styles.sectionTitle}>Summary</Text>
-        <Text style={styles.listItem}>{estimate.summary}</Text>
+        <Text style={styles.listItem}>{projectData.estimate.summary}</Text>
       </View>
     );
   };
 
   const renderPartsTab = () => {
     if (!projectData) return null;
-    const { estimate, parts_tools, type } = projectData;
-    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
-
+    console.log('projectData Data:', projectData);
+    const actionType = projectData.type === 'mod' ? 'Mod' : 'Repair';
+    let tools: string[] = [];
+    let parts: string[] = [];
+    if (projectData.parts_tools) {
+      tools = Object.values(projectData.parts_tools.tools);
+      parts = Object.values(projectData.parts_tools.parts);
+    }
     return (
       <View style={styles.partsContainer}>
         <Text style={styles.partsTitle}>DIY {actionType} Details</Text>
         <Text style={styles.estimatedCost}>Estimated {actionType} Cost</Text>
-        <Text style={styles.costAmount}>${estimate.averageRepairPrice.toFixed(2)}</Text>
+        <Text style={styles.costAmount}>{projectData.estimate.averageRepairPrice <= 0 ? 'To be determined' : `$${projectData.estimate.averageRepairPrice.toFixed(2)}`}</Text>
         
         <Text style={styles.sectionTitle}>Expected {actionType} Time</Text>
-        <Text style={styles.listItem}>{estimate.expectedRepairTime}</Text>
+        <Text style={styles.listItem}>{projectData.estimate.expectedRepairTime}</Text>
         
         <Text style={styles.sectionTitle}>{actionType} Difficulty</Text>
-        <Text style={styles.listItem}>{estimate.repairDifficulty}</Text>
+        <Text style={styles.listItem}>{projectData.estimate.repairDifficulty}</Text>
         
         <Text style={styles.sectionTitle}>Parts Needed</Text>
-        {parts_tools.parts.map((part, index) => (
+        {parts.map((part, index) => (
           <View key={index} style={styles.partItem}>
             <Text style={styles.partName}>{part}</Text>
             <Text style={styles.partCost}>Cost: To be determined</Text>
@@ -164,7 +153,7 @@ export default function ChatQuoteScreen() {
         ))}
         
         <Text style={styles.sectionTitle}>Tools Needed</Text>
-        {parts_tools.tools.map((tool, index) => (
+        {tools.map((tool, index) => (
           <Text key={index} style={styles.listItem}>• {tool}</Text>
         ))}
       </View>
@@ -179,7 +168,15 @@ export default function ChatQuoteScreen() {
     );
   }
 
-  const actionType = projectData?.type === 'Mod' ? 'Mod' : 'Repair';
+  if (!projectData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>No project data available</Text>
+      </View>
+    );
+  }
+
+  const actionType = projectData.type === 'mod' ? 'Mod' : 'Repair';
 
   return (
     <View style={styles.container}>
