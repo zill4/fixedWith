@@ -41,5 +41,43 @@ service cloud.firestore {
       allow delete: if request.auth != null &&
                     resource.data.userId == request.auth.uid;
     }
+
+    // Quotes collection
+    match /quotes/{quoteId} {
+      // Allow create if the user is authenticated and the userId field matches their uid
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+
+      // Allow read if the user is authenticated and the userId in resource matches their uid
+      allow read: if request.auth != null &&
+                  resource.data.userId == request.auth.uid;
+
+      // Allow update if the user is authenticated and the userId matches their uid
+      allow update: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
+
+      // Allow delete if the user is authenticated and the userId matches their uid
+      allow delete: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
+    }
+
+    // Build_repairs collection
+    match /build_repairs/{buildRepairId} {
+      // Allow create if the user is authenticated and the userId field matches their uid
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+
+      // Allow read if the user is authenticated and the userId in resource matches their uid
+      allow read: if request.auth != null &&
+                  resource.data.userId == request.auth.uid;
+
+      // Allow update if the user is authenticated and the userId matches their uid
+      allow update: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
+
+      // Allow delete if the user is authenticated and the userId matches their uid
+      allow delete: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
+    }
   }
 }

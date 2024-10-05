@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../../../components/Header';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProjectData {
@@ -62,11 +62,63 @@ export default function ChatQuoteScreen() {
     }
   };
 
-  const handleSaveQuote = () => {
-    if (activeTab === 'Quotes') {
-      router.push(`/quote/${id}` as any);
-    } else {
-      router.push(`/build-repair/${id}` as any);
+  const handleSaveQuote = async () => {
+    if (!user || !projectData || !id) {
+      Alert.alert('Error', 'Unable to save. Please try again later.');
+      return;
+    }
+
+    const db = getFirestore();
+    const { estimate, parts_tools, type } = projectData;
+    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
+
+    try {
+      let savedDocId: string;
+
+      if (activeTab === 'Quotes') {
+        // Save shop quote
+        const quoteData = {
+          projectId: id,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+          type: 'shop',
+          estimatedCost: estimate.averageShopPrice,
+          summary: estimate.summary,
+        };
+
+        const quoteRef = await addDoc(collection(db, 'quotes'), quoteData);
+        savedDocId = quoteRef.id;
+        console.log('Shop quote saved with ID: ', savedDocId);
+        Alert.alert('Success', 'Shop quote saved successfully!');
+      } else {
+        // Save DIY build/repair
+        const buildRepairData = {
+          projectId: id,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+          type: actionType.toLowerCase(),
+          estimatedCost: estimate.averageRepairPrice,
+          expectedTime: estimate.expectedRepairTime,
+          difficulty: estimate.repairDifficulty,
+          parts: parts_tools.parts,
+          tools: parts_tools.tools,
+        };
+
+        const buildRepairRef = await addDoc(collection(db, 'build_repairs'), buildRepairData);
+        savedDocId = buildRepairRef.id;
+        console.log('DIY build/repair saved with ID: ', savedDocId);
+        Alert.alert('Success', `DIY ${actionType} plan saved successfully!`);
+      }
+
+      // Navigate to the appropriate screen with the saved document ID
+      if (activeTab === 'Quotes') {
+        router.push(`/quote/${savedDocId}` as any);
+      } else {
+        router.push(`/build-repair/${savedDocId}` as any);
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      Alert.alert('Error', 'Failed to save data. Please try again.');
     }
   };
 

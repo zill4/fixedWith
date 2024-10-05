@@ -1,101 +1,113 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../../components/Header';
+import { doc, getDoc, getFirestore, Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface Part {
-  name: string;
-  cost: string;
-  source: string;
-  image: string;
-}
-
-interface ResponseData {
-  title: string;
-  description: string;
-  estimatedTotal: string;
-  parts: Part[];
+interface BuildRepairData {
+  createdAt: Timestamp;
+  difficulty: string;
+  estimatedCost: number;
+  expectedTime: string;
+  parts: string[];
+  tools: string[];
+  projectId: string;
+  type: string;
+  userId: string;
 }
 
 export default function BuildRepairChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [response, setResponse] = useState<ResponseData | null>(null);
   const navigation = useNavigation();
-
+  const [buildRepairData, setBuildRepairData] = useState<BuildRepairData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     navigation.setOptions({
-    headerShown: false,
+      headerShown: false,
     });
-}, [navigation]);
+    fetchBuildRepairData();
+  }, [id, user]);
 
-  useEffect(() => {
-    // TODO: Fetch AI response using the build ID
-    // For now, use dummy data
-    const dummyResponse: ResponseData = {
-      title: "Engine Rep1 DIY List",
-      description: "Replace front brake pads and rotors. Inspect and clean brake calipers...",
-      estimatedTotal: "$500.00",
-      parts: [
-        {
-          name: "Oil Filter",
-          cost: "$15.00",
-          source: "Source",
-          image: "https://www.pgfilters.com/wp-content/uploads/2023/02/What-is-the-Oil-Filters-Primary-Job_-1000x675-1.jpg"
-        },
-        {
-          name: "Synthetic Motor Oil",
-          cost: "$25.00",
-          source: "Source",
-          image: "https://media.istockphoto.com/id/153517859/photo/pouring-oil.jpg?s=612x612&w=0&k=20&c=bWda1gadsnp827XRm0ioim-7xKduBD-qxupriQcNOoQ="
-        },
-        {
-          name: "Wrench Set",
-          cost: "$40.00",
-          source: "Source",
-          image: "https://www.harborfreight.com/media/catalog/product/cache/9fc4a8332f9638515cd199dd0f9238da/3/3/33284_W3.jpg"
-        }
-      ]
-    };
-    setResponse(dummyResponse);
-  }, [id]);
+  const fetchBuildRepairData = async () => {
+    if (!user || !id) {
+      setIsLoading(false);
+      return;
+    }
 
-  if (!response) {
+    const db = getFirestore();
+    const buildRepairRef = doc(db, 'build_repairs', id);
+
+    try {
+      const buildRepairSnap = await getDoc(buildRepairRef);
+      if (buildRepairSnap.exists()) {
+        const data = buildRepairSnap.data() as BuildRepairData;
+        setBuildRepairData(data);
+      } else {
+        console.log("No such build/repair document!");
+      }
+    } catch (error) {
+      console.error('Error fetching build/repair data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading response...</Text>
+        <ActivityIndicator size="large" color="#DE2020" />
+      </View>
+    );
+  }
+
+  if (!buildRepairData) {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <Text style={styles.errorText}>Failed to load build/repair data.</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-        <Header />
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push('/build-repair')}>
+      <Header />
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
-      <Text style={styles.title}>{response.title}</Text>
+      <Text style={styles.title}>{buildRepairData.type.charAt(0).toUpperCase() + buildRepairData.type.slice(1)} Plan</Text>
       <ScrollView style={styles.scrollView}>
-        <TouchableOpacity style={styles.descriptionContainer}>
-          <View style={styles.descriptionContent}>
-            <Text style={styles.descriptionTitle}>Repair Description</Text>
-            <Text style={styles.descriptionText} numberOfLines={2}>{response.description}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#888" />
-        </TouchableOpacity>
-        <Text style={styles.estimatedTotal}>Estimated total: {response.estimatedTotal}</Text>
-        {response.parts.map((part, index) => (
-          <View key={index} style={styles.partItem}>
-            <Image source={{ uri: part.image }} style={styles.partImage} />
-            <View style={styles.partInfo}>
-              <Text style={styles.partName}>{part.name}</Text>
-              <Text style={styles.partCost}>Estimated Cost: {part.cost}</Text>
-              <Text style={styles.partSource}>{part.source}</Text>
-            </View>
-          </View>
-        ))}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Details</Text>
+          <Text style={styles.detailText}>Difficulty: {buildRepairData.difficulty}</Text>
+          <Text style={styles.detailText}>Estimated Time: {buildRepairData.expectedTime}</Text>
+          <Text style={styles.detailText}>Estimated Cost: ${buildRepairData.estimatedCost.toFixed(2)}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Parts Needed</Text>
+          {buildRepairData.parts.map((part, index) => (
+            <Text key={index} style={styles.listItem}>• {part}</Text>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tools Needed</Text>
+          {buildRepairData.tools.map((tool, index) => (
+            <Text key={index} style={styles.listItem}>• {tool}</Text>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Additional Information</Text>
+          <Text style={styles.detailText}>Created: {buildRepairData.createdAt.toDate().toLocaleString()}</Text>
+          <Text style={styles.detailText}>Project ID: {buildRepairData.projectId}</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -123,58 +135,26 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  descriptionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  section: {
     backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
   },
-  descriptionContent: {
-    flex: 1,
-  },
-  descriptionTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  descriptionText: {
+  detailText: {
     color: '#666',
   },
-  estimatedTotal: {
+  listItem: {
+    color: '#666',
+  },
+  errorText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
-  },
-  partItem: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-  },
-  partImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 16,
-  },
-  partInfo: {
-    flex: 1,
-  },
-  partName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  partCost: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 4,
-  },
-  partSource: {
-    fontSize: 14,
-    color: '#DE2020',
   },
 });

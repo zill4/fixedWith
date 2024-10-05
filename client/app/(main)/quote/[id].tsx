@@ -1,87 +1,101 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../../components/Header';
-interface Part {
-  name: string;
-  cost: number;
-}
-
-interface Labor {
-  name: string;
-  cost: number;
-}
+import { doc, getDoc, getFirestore, Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface QuoteData {
-  title: string;
-  description: string;
-  parts: Part[];
-  labor: Labor[];
+  createdAt: Timestamp;
+  estimatedCost: number;
+  projectId: string;
+  summary: string;
+  type: string;
+  userId: string;
 }
 
 export default function QuoteScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
-  // Mock data - replace with actual data fetching logic
-  const quoteData: QuoteData = {
-    title: "Engine Rep1 Quote",
-    description: "Replace front brake pads and rotors. Inspect and clean brake calipers.",
-    parts: [
-      { name: "Brake Pads (Front)", cost: 50.00 },
-      { name: "Brake Rotors (Front)", cost: 120.00 },
-      { name: "Brake Cleaner", cost: 10.00 },
-    ],
-    labor: [
-      { name: "Labor Cost", cost: 80.00 },
-      { name: "Markup", cost: 30.00 },
-    ],
-  };
+  const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
-  }, [navigation]);
+    fetchQuoteData();
+  }, [id, user]); // Add dependencies here
 
-  const totalCost = [...quoteData.parts, ...quoteData.labor].reduce((sum, item) => sum + item.cost, 0);
+  const fetchQuoteData = async () => {
+    if (!user || !id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const db = getFirestore();
+    const quoteRef = doc(db, 'quotes', id);
+
+    try {
+      const quoteSnap = await getDoc(quoteRef);
+      if (quoteSnap.exists()) {
+        const data = quoteSnap.data() as QuoteData;
+        setQuoteData(data);
+      } else {
+        console.log("No such quote!");
+      }
+    } catch (error) {
+      console.error('Error fetching quote data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#DE2020" />
+      </View>
+    );
+  }
+
+  if (!quoteData) {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <Text style={styles.errorText}>Failed to load quote data.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Header />
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push('/quote')}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
-      <Text style={styles.title}>{quoteData.title}</Text>
+      <Text style={styles.title}>Shop Quote</Text>
       
       <ScrollView style={styles.scrollView}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Repair Description</Text>
-          <Text style={styles.description}>{quoteData.description}</Text>
+          <Text style={styles.sectionTitle}>Quote Summary</Text>
+          <Text style={styles.description}>{quoteData.summary}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Parts & Estimated Costs</Text>
-          {quoteData.parts.map((part, index) => (
-            <View key={index} style={styles.itemRow}>
-              <Text style={styles.itemName}>{part.name}</Text>
-              <Text style={styles.itemCost}>${part.cost.toFixed(2)}</Text>
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Estimated Cost</Text>
+          <Text style={styles.costAmount}>${quoteData.estimatedCost.toFixed(2)}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Labor & Markup</Text>
-          {quoteData.labor.map((item, index) => (
-            <View key={index} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemCost}>${item.cost.toFixed(2)}</Text>
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Quote Details</Text>
+          <Text style={styles.detailText}>Type: {quoteData.type}</Text>
+          <Text style={styles.detailText}>Created: {quoteData.createdAt.toDate().toLocaleString()}</Text>
+          <Text style={styles.detailText}>Project ID: {quoteData.projectId}</Text>
         </View>
-
-        <Text style={styles.totalCost}>Total: ${totalCost.toFixed(2)}</Text>
       </ScrollView>
 
       <TouchableOpacity style={styles.shareButton}>
@@ -96,6 +110,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backButton: {
     marginBottom: 16,
@@ -123,24 +142,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  itemName: {
-    fontSize: 16,
-  },
-  itemCost: {
-    fontSize: 16,
+  costAmount: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#DE2020',
   },
-  totalCost: {
+  detailText: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  errorText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginTop: 16,
-    marginBottom: 24,
+    color: 'red',
+    textAlign: 'center',
   },
   shareButton: {
     backgroundColor: '#DE2020',
