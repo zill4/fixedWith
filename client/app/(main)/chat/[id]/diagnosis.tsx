@@ -1,14 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../../../components/Header';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface Part {
-  name: string;
-  cost: number;
-  quantity: number;
-  image: string;
+interface ProjectData {
+  type: 'Repair' | 'Mod';
+  estimate: {
+    expectedRepairTime: string;
+    averageRepairPrice: number;
+    toolsAndMaterials: string[];
+    averageShopPrice: number;
+    repairDifficulty: string;
+    summary: string;
+  };
+  parts_tools: {
+    parts: string[];
+    tools: string[];
+  };
+  instructions: {
+    steps: string[];
+  };
 }
 
 export default function ChatQuoteScreen() {
@@ -16,18 +30,37 @@ export default function ChatQuoteScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('Quotes');
-
-  const parts: Part[] = [
-    { name: 'Engine Cap', cost: 450.00, quantity: 1, image: 'https://media.istockphoto.com/id/1251594669/photo/servicing-a-car-with-oil-change.jpg?s=612x612&w=0&k=20&c=78YUg0yu1Sr2RWv8rQVZcRsp76giy0JWvSsjQfmkzNQ=' },
-    { name: 'Socket Wrench', cost: 50.00, quantity: 1, image: 'https://m.media-amazon.com/images/I/41UzJM7XA+L._AC_.jpg' },
-    { name: 'Spark Plugs', cost: 200.00, quantity: 1, image: 'https://lawrencevilleautocenter.com/wp-content/uploads/AdobeStock_286942688.jpeg' },
-  ];
+  const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
+    fetchProjectData();
   }, [navigation]);
+
+  const fetchProjectData = async () => {
+    if (!user || !id) return;
+
+    const db = getFirestore();
+    const projectRef = doc(db, 'projects', id as string);
+
+    try {
+      const projectSnap = await getDoc(projectRef);
+      if (projectSnap.exists()) {
+        const data = projectSnap.data() as ProjectData;
+        setProjectData(data);
+      } else {
+        console.log("No such project!");
+      }
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveQuote = () => {
     if (activeTab === 'Quotes') {
@@ -37,40 +70,64 @@ export default function ChatQuoteScreen() {
     }
   };
 
+  const renderQuotesTab = () => {
+    if (!projectData) return null;
+    const { estimate, type } = projectData;
+    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
 
-  const renderQuotesTab = () => (
-    <View style={styles.quoteContainer}>
-      <Text style={styles.quoteTitle}>Repair Quote</Text>
-      <Text style={styles.estimatedCost}>Estimated Cost</Text>
-      <Text style={styles.costAmount}>$450.00</Text>
-      <Text style={styles.sectionTitle}>Parts Needed</Text>
-      <Text style={styles.listItem}>• Brake Pads</Text>
-      <Text style={styles.listItem}>• Oil Filter</Text>
-      <Text style={styles.listItem}>• Spark Plugs</Text>
-      <Text style={styles.sectionTitle}>Tools Needed</Text>
-      <Text style={styles.listItem}>• Wrench Set</Text>
-      <Text style={styles.listItem}>• Jack</Text>
-      <Text style={styles.listItem}>• Screwdriver Set</Text>
-      <Text style={styles.sectionTitle}>Labor</Text>
-      <Text style={styles.laborText}>5hrs x $20.00hr + tax + fees + upcharge</Text>
-    </View>
-  );
+    return (
+      <View style={styles.quoteContainer}>
+        <Text style={styles.quoteTitle}>Shop Quote</Text>
+        <Text style={styles.estimatedCost}>Estimated Shop Cost</Text>
+        <Text style={styles.costAmount}>${estimate.averageShopPrice.toFixed(2)}</Text>
+        <Text style={styles.sectionTitle}>Summary</Text>
+        <Text style={styles.listItem}>{estimate.summary}</Text>
+      </View>
+    );
+  };
 
-  const renderPartsTab = () => (
-    <View>
-      {parts.map((part: Part, index: number) => (
-        <View key={index} style={styles.partItem}>
-          <Image source={{ uri: part.image as string }} style={styles.partImage} />
-          <View style={styles.partInfo}>
-            <Text style={styles.partName}>{part.name}</Text>
-            <Text style={styles.partCost}>Estimated Cost: ${part.cost.toFixed(2)}</Text>
-            <Text style={styles.partQuantity}>Quantity: {part.quantity}</Text>
+  const renderPartsTab = () => {
+    if (!projectData) return null;
+    const { estimate, parts_tools, type } = projectData;
+    const actionType = type === 'Mod' ? 'Mod' : 'Repair';
+
+    return (
+      <View style={styles.partsContainer}>
+        <Text style={styles.partsTitle}>DIY {actionType} Details</Text>
+        <Text style={styles.estimatedCost}>Estimated {actionType} Cost</Text>
+        <Text style={styles.costAmount}>${estimate.averageRepairPrice.toFixed(2)}</Text>
+        
+        <Text style={styles.sectionTitle}>Expected {actionType} Time</Text>
+        <Text style={styles.listItem}>{estimate.expectedRepairTime}</Text>
+        
+        <Text style={styles.sectionTitle}>{actionType} Difficulty</Text>
+        <Text style={styles.listItem}>{estimate.repairDifficulty}</Text>
+        
+        <Text style={styles.sectionTitle}>Parts Needed</Text>
+        {parts_tools.parts.map((part, index) => (
+          <View key={index} style={styles.partItem}>
+            <Text style={styles.partName}>{part}</Text>
+            <Text style={styles.partCost}>Cost: To be determined</Text>
           </View>
-        </View>
-      ))}
-      <Text style={styles.totalCost}>Estimated total: ${parts.reduce((sum, part) => sum + part.cost, 0).toFixed(2)}</Text>
-    </View>
-  );
+        ))}
+        
+        <Text style={styles.sectionTitle}>Tools Needed</Text>
+        {parts_tools.tools.map((tool, index) => (
+          <Text key={index} style={styles.listItem}>• {tool}</Text>
+        ))}
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#DE2020" />
+      </View>
+    );
+  }
+
+  const actionType = projectData?.type === 'Mod' ? 'Mod' : 'Repair';
 
   return (
     <View style={styles.container}>
@@ -85,13 +142,13 @@ export default function ChatQuoteScreen() {
             style={[styles.tab, activeTab === 'Quotes' && styles.activeTab]}
             onPress={() => setActiveTab('Quotes')}
           >
-            <Text style={[styles.tabText, activeTab === 'Quotes' && styles.activeTabText]}>Quotes</Text>
+            <Text style={[styles.tabText, activeTab === 'Quotes' && styles.activeTabText]}>Shop Quote</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'Parts' && styles.activeTab]}
             onPress={() => setActiveTab('Parts')}
           >
-            <Text style={[styles.tabText, activeTab === 'Parts' && styles.activeTabText]}>Parts</Text>
+            <Text style={[styles.tabText, activeTab === 'Parts' && styles.activeTabText]}>DIY {actionType}</Text>
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.scrollView}>
@@ -99,7 +156,7 @@ export default function ChatQuoteScreen() {
         </ScrollView>
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveQuote}>
           <Text style={styles.saveButtonText}>
-            {activeTab === 'Quotes' ? 'Save Quote' : 'Save Part List'}
+            {activeTab === 'Quotes' ? 'Save Shop Quote' : `Save DIY ${actionType}`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -197,13 +254,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  partItem: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
-  },
   partImage: {
     width: 80,
     height: 80,
@@ -212,15 +262,6 @@ const styles = StyleSheet.create({
   },
   partInfo: {
     flex: 1,
-  },
-  partName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  partCost: {
-    fontSize: 16,
-    color: '#666',
   },
   partQuantity: {
     fontSize: 14,
@@ -231,5 +272,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 15,
     marginBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  partsContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 20,
+  },
+  partsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  partItem: {
+    marginBottom: 10,
+  },
+  partName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  partCost: {
+    fontSize: 14,
+    color: '#666',
   },
 });

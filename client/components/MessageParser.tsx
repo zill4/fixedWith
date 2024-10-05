@@ -1,109 +1,90 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import RepairEstimateComponent from './RepairEstimateComponent';
+import RepairInstructionsComponent from './RepairInstructionsComponent';
+import PartsAndToolsComponent from './PartsAndToolsComponent';
 
-interface MessagePart {
-  type: 'text' | 'json';
-  content: string | object;
-  title?: string;
-}
-
-interface MessageParserProps {
+export interface MessageParserProps {
   message: string;
+  onParsedData: (data: ParsedData) => void;
 }
 
-const MessageParser: React.FC<MessageParserProps> = ({ message }) => {
-  const parseMessage = (message: string): MessagePart[] => {
-    const parts: MessagePart[] = [];
-    let lastIndex = 0;
+export interface ParsedData {
+  repairEstimate: RepairEstimate | null;
+  repairInstructions: RepairInstructions | null;
+  partsAndTools: PartsAndTools | null;
+  plainText: string;
+}
 
-    // Regular expression to match the pattern: Title:\n{\ncontent\n}\n
-    const regex = /([^\n]+):\n\{\n([\s\S]*?)\n\}\n/g;
+export interface RepairEstimate {
+  expectedRepairTime: string;
+  averageRepairPrice: number;
+  toolsAndMaterials: string[];
+  averageShopPrice: number;
+  repairDifficulty: string;
+  summary: string;
+}
+
+export interface RepairInstructions {
+  steps: string[];
+}
+
+export interface PartsAndTools {
+  parts: string[];
+  tools: string[];
+}
+
+const MessageParser: React.FC<MessageParserProps> = ({ message, onParsedData }) => {
+  const parseMessage = (message: string): ParsedData => {
+    let remainingText = message;
+    const jsonRegex = /(\w+(?:\s+\w+)*):\s*\n\{[\s\S]*?\n\}/g;
     let match;
+    let repairEstimate: RepairEstimate | null = null;
+    let repairInstructions: RepairInstructions | null = null;
+    let partsAndTools: PartsAndTools | null = null;
 
-    while ((match = regex.exec(message)) !== null) {
-      const index = match.index;
-
-      // Add any plain text before the current match
-      if (lastIndex < index) {
-        parts.push({
-          type: 'text',
-          content: message.substring(lastIndex, index),
-        });
-      }
-
-      // Extract the title and JSON content
+    while ((match = jsonRegex.exec(message)) !== null) {
       const title = match[1];
-      const jsonString = `{${match[2]}}`;
+      const jsonString = match[0].substring(match[0].indexOf('{'));
 
-      let jsonContent;
       try {
-        jsonContent = JSON.parse(jsonString);
+        const jsonData = JSON.parse(jsonString);
+        switch (title) {
+          case 'Repair Estimate':
+            repairEstimate = jsonData as RepairEstimate;
+            break;
+          case 'Repair Instructions':
+            repairInstructions = jsonData as RepairInstructions;
+            break;
+          case 'Parts and Tools Needed':
+            partsAndTools = jsonData as PartsAndTools;
+            break;
+        }
+        remainingText = remainingText.replace(match[0], '');
       } catch (error) {
-        // If JSON parsing fails, treat the content as plain text
-        jsonContent = match[2];
-      }
-
-      parts.push({
-        type: 'json',
-        title,
-        content: jsonContent,
-      });
-
-      lastIndex = regex.lastIndex;
-    }
-
-    // Add any remaining plain text after the last match
-    if (lastIndex < message.length) {
-      parts.push({
-        type: 'text',
-        content: message.substring(lastIndex),
-      });
-    }
-
-    return parts;
-  };
-
-  const renderPart = (part: MessagePart, index: number) => {
-    if (part.type === 'text') {
-      return (
-        <Text key={index} style={styles.text}>
-          {part.content as string}
-        </Text>
-      );
-    } else if (part.type === 'json') {
-      // Based on the title, render the JSON content differently
-      switch (part.title) {
-        case 'Repair Estimate':
-          return (
-            <RepairEstimate key={index} data={part.content} />
-          );
-        case 'Repair Instructions':
-          return (
-            <RepairInstructions key={index} data={part.content} />
-          );
-        case 'Parts and Tools Needed':
-          return (
-            <PartsAndToolsNeeded key={index} data={part.content} />
-          );
-        default:
-          return (
-            <View key={index} style={styles.jsonContainer}>
-              <Text style={styles.title}>{part.title}:</Text>
-              <Text style={styles.jsonText}>
-                {typeof part.content === 'object'
-                  ? JSON.stringify(part.content, null, 2)
-                  : part.content}
-              </Text>
-            </View>
-          );
+        console.error('Error parsing JSON:', error);
       }
     }
-    return null;
+
+    return {
+      repairEstimate,
+      repairInstructions,
+      partsAndTools,
+      plainText: remainingText.trim(),
+    };
   };
 
-  const parts = parseMessage(message);
+  const parsedData = parseMessage(message);
+  onParsedData(parsedData);
 
-  return <View>{parts.map((part, index) => renderPart(part, index))}</View>;
+  return (
+    <View>
+      <Text style={styles.plainText}>{parsedData.plainText}</Text>
+      {parsedData.repairEstimate && <RepairEstimateComponent data={parsedData.repairEstimate} />}
+      {parsedData.repairInstructions && <RepairInstructionsComponent data={parsedData.repairInstructions} />}
+      {parsedData.partsAndTools && <PartsAndToolsComponent data={parsedData.partsAndTools} />}
+    </View>
+  );
 };
 
 // Subcomponents for different JSON sections
@@ -185,6 +166,10 @@ const PartsAndToolsNeeded: React.FC<PartsAndToolsNeededProps> = ({ data }) => {
 };
 
 const styles = StyleSheet.create({
+  plainText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
   text: {
     fontSize: 16,
     marginBottom: 5,

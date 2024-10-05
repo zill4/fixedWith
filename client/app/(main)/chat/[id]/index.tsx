@@ -6,7 +6,9 @@ import Header from '../../../../components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc, getFirestore, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { sendToClaude, ClaudeMessage } from '@/components/SendToClaude';
-import MessageParser from '@/components/MessageParser';
+// import MessageParser from '@/components/MessageParser';
+
+import MessageParser, { ParsedData, RepairEstimate, RepairInstructions, PartsAndTools } from '@/components/MessageParser';
 
 interface CarProfile {
   id: string;
@@ -189,6 +191,63 @@ export default function ChatScreen() {
     }
   };
 
+  const handleParsedData = async (messageId: string, parsedData: ParsedData) => {
+    if (!project || !user) return;
+
+    const db = getFirestore();
+    const projectRef = doc(db, 'projects', project.id);
+
+    try {
+      const projectDoc = await getDoc(projectRef);
+      if (projectDoc.exists()) {
+        const projectData = projectDoc.data();
+        const updateData: { [key: string]: any } = {};
+
+        const replaceRepairWithMod = (obj: any): any => {
+          if (typeof obj !== 'object' || obj === null) return obj;
+          
+          return Object.entries(obj).reduce((acc, [key, value]) => {
+            let newKey = key;
+            let newValue = value;
+
+            if (typeof key === 'string') {
+              newKey = key.replace(/repair/gi, project.type.toLowerCase());
+            }
+
+            if (typeof value === 'string') {
+              newValue = value.replace(/repair/gi, project.type.toLowerCase());
+            } else if (typeof value === 'object') {
+              newValue = replaceRepairWithMod(value);
+            }
+
+            acc[newKey] = newValue;
+            return acc;
+          }, {} as any);
+        };
+
+        if (parsedData.repairEstimate && !projectData.estimate) {
+          updateData.estimate = replaceRepairWithMod(parsedData.repairEstimate);
+        }
+
+        if (parsedData.partsAndTools && !projectData.parts_tools) {
+          updateData.parts_tools = replaceRepairWithMod(parsedData.partsAndTools);
+        }
+
+        if (parsedData.repairInstructions && !projectData.instructions) {
+          updateData.instructions = replaceRepairWithMod(parsedData.repairInstructions);
+        }
+
+        // Only update if there's new data to add
+        if (Object.keys(updateData).length > 0) {
+          await updateDoc(projectRef, updateData);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating parsed data:', error);
+      Alert.alert('Error', 'Failed to update parsed data. Please try again.');
+    }
+  };
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -237,8 +296,10 @@ export default function ChatScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={[styles.messageBubble, item.userId === user?.uid ? styles.userMessage : styles.botMessage]}>
-            {/* <Text style={styles.messageText}>{item.text}</Text> */}
-            <MessageParser message={item.text} />
+            <MessageParser 
+              message={item.text} 
+              onParsedData={(parsedData) => handleParsedData(item.id, parsedData)}
+            />
           </View>
         )}
       />
