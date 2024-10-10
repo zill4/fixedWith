@@ -22,14 +22,14 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.yourcompany.fixedwith'
+      bundleIdentifier: 'ai.fixedwith.client'
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#FFFFFF'
       },
-      package: 'com.yourcompany.fixedwith'
+      package: 'ai.fixedwith.client'
     },
     web: {
       favicon: './assets/images/favicon.png',
@@ -50,6 +50,9 @@ export default {
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
+      eas: {
+        projectId: "7e756c26-bd32-4a65-9a87-784765d1359e"
+      }
     },
     plugins: [
       'expo-router'
