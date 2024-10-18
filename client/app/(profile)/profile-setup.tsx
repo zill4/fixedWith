@@ -40,7 +40,7 @@ export default function ProfileSetupScreen() {
       if (profileSnap.exists()) {
         const data = profileSnap.data() as ProfileData;
         setProfile(data);
-        console.log('Profile data:', data);
+        // console.log('Profile data:', data);
       }
     } catch (error) {
       console.log('Error fetching profile data:', error);
@@ -66,17 +66,16 @@ export default function ProfileSetupScreen() {
       if (profileId) {
         const profileDocRef = doc(profilesCollectionRef, profileId);
         await updateDoc(profileDocRef, profile as any);
-        console.log('Car profile updated with ID: ', profileId);
       } else {
         const newProfileRef = await addDoc(profilesCollectionRef, {
           ...profile,
           createdAt: new Date(),
         });
-        console.log('Car profile created with ID: ', newProfileRef.id);
+        // console.log('Car profile created with ID: ', newProfileRef.id);
       }
 
       Alert.alert('Success', `Car profile ${profileId ? 'updated' : 'saved'} successfully`);
-      router.replace('/profiles');
+      router.replace('/(main)/home');
     } catch (error) {
       console.error('Error saving car profile:', error);
       Alert.alert('Error', 'Failed to save car profile');

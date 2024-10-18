@@ -8,18 +8,18 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { logout } = useAuth();
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(false);
+  // const [currentPassword, setCurrentPassword] = useState('');
+  // const [newPassword, setNewPassword] = useState('');
+  // const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  // const [cardNumber, setCardNumber] = useState('');
+  // const [expiryDate, setExpiryDate] = useState('');
+  // const [cvv, setCvv] = useState('');
+  // const [emailNotifications, setEmailNotifications] = useState(false);
+  // const [pushNotifications, setPushNotifications] = useState(false);
 
-  const handleSave = () => {
-    // TODO: Implement save logic
-  };
+  // const handleSave = () => {
+  //   // TODO: Implement save logic
+  // };
 
   const handleLogout = () => {
     logout();
@@ -30,8 +30,8 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="car" size={24} color="#ff0000" />
-          <Text style={styles.title}>AutoSnap</Text>
+          <Text style={styles.title}>FixedW/</Text>
+          <Ionicons name="car-sport" size={32} color="#ff0000" />
         </View>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
@@ -115,7 +115,7 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Help</Text>
         <Text style={styles.helpText}>
-          For assistance with your account or the FixedWith app, contact Justin@crispcode.io
+          For assistance with your account or the FixedWith app, email us at contact@fixedwith.ai
         </Text>
       </View>
 

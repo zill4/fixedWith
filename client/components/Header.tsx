@@ -11,8 +11,8 @@ export default function Header() {
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
-      <Ionicons name="car-sport" size={24} color="#DE2020" />
-      <Text style={styles.headerText}>FixedWith</Text>
+      <Text style={styles.headerText}>FixedW/</Text>
+      <Ionicons name="car-sport" size={32} color="#DE2020" />
       </View>
       <TouchableOpacity onPress={handleEditProfile}>
         <Ionicons name="settings-outline" size={24} color="black" />

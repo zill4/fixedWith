@@ -32,15 +32,14 @@ export default function NewScreen() {
     if (description) {
       setProblemDescription(description);
     }
-    fetchCarProfiles();
-  }, [navigation, type, description]);
+    fetchCarProfiles(); // Call the function here
+  }, [navigation, type, description, user]);
 
   const fetchCarProfiles = async () => {
     if (!user) return;
 
     const db = getFirestore();
-     const profilesCollection = collection(db, 'users', user.uid, 'profiles');
-    //const profilesCollection = doc(db, 'profiles', user.uid);
+    const profilesCollection = collection(db, 'users', user.uid, 'profiles');
     try {
       const querySnapshot = await getDocs(profilesCollection);
       const profiles = querySnapshot.docs.map(doc => ({
@@ -155,7 +154,7 @@ export default function NewScreen() {
             <ProfileCard 
               key={profile.id}
               image={profile.image || tempCarImage} 
-              title={`${profile.name} (${profile.year})`} 
+              title={`${profile.make} (${profile.year})`} 
               func={() => setSelectedCarProfileId(profile.id)}
               isSelected={selectedCarProfileId === profile.id as string}
             />

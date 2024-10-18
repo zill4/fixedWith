@@ -91,6 +91,9 @@ export default function ChatScreen() {
           const carProfileData = carProfileSnap.data() as Omit<CarProfile, 'id'>;
           setCarProfile({ id: carProfileSnap.id, ...carProfileData });
   
+          console.log("Car Profile:", carProfileData);
+          console.log("Project:", formattedProject);
+          console.log("Messages:", formattedProject.messages);
           // Only make the initial Claude request if there are no messages
           if (formattedProject.messages.length === 0) {
             await handleInitialClaudeRequest(formattedProject, carProfileData as CarProfile);
@@ -119,6 +122,9 @@ export default function ChatScreen() {
         createdAt: new Date(), // JavaScript Date object
       };
       const updatedMessages = [aiMessage];
+      // testing why claude is getting called everytime
+      console.log("Calling claude Claude Response:", claudeResponse);
+      console.log("Updated Messages:", updatedMessages);
       setMessages(updatedMessages);
       await updateFirestoreMessages(updatedMessages);
     }
