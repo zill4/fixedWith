@@ -14,6 +14,6 @@ module.exports = (() => {
   assetExts: resolver.assetExts.filter((ext) => ext !== 'svg').concat(['ttf']),
     sourceExts: [...resolver.sourceExts, 'svg'],
   };
-
+  config.resolver.sourceExts.push('cjs');
   return config;
 })();
