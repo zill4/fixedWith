@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "FixedWith",
+    "slug": "fixedwith",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -31,7 +31,12 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios_google_services_file": "./GoogleService-Info.plist"
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -46,8 +51,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "8a35493f-f797-45ce-be39-ddeff9c2faaf"
+        "projectId": "7e756c26-bd32-4a65-9a87-784765d1359e"
       }
-    }
+    },
+    "owner": "zill4"
   }
 }

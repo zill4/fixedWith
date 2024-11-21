@@ -5,7 +5,6 @@ import { getAnalytics } from "firebase/analytics";
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_AUTH_DOMAIN,
@@ -16,8 +15,11 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_MEASUREMENT_ID
 };
 
-
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const analytics = Platform.OS === 'web' ? getAnalytics(app) : null;
+
+// Only initialize analytics on web platform and when window is defined
+export const analytics = (Platform.OS === 'web' && typeof window !== 'undefined') 
+  ? getAnalytics(app) 
+  : null;

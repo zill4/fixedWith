@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "fixedwith",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -11,7 +11,10 @@
     "test": "jest --watchAll",
     "lint": "expo lint",
     "build": "npx expo export --platform web && pnpm fixmrepo",
-    "fixmrepo": "cd dist && mv assets/__node_modules node_modules"
+    "fixmrepo": "cd dist && mv assets/__node_modules node_modules",
+    "prebuild": "node ./scripts/prebuild.js",
+    "eas-build-pre-install": "echo 'Running pre-install hook'",
+    "eas-build-pre-configure": "npm run prebuild || exit 1"
   },
   "jest": {
     "preset": "jest-expo"
