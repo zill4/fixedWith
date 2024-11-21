@@ -1,30 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled rejection:', error);
-  process.exit(1);
-});
+console.log('Starting prebuild script...');
 
-try {
-  console.error('DEBUG: Starting prebuild script');
-  
-  const targetPlistPath = path.join(__dirname, '..', 'GoogleService-Info.plist');
-  console.error(`DEBUG: Target path is ${targetPlistPath}`);
-  
-  console.error('DEBUG: Environment variables available:', Object.keys(process.env));
-  
-  if (process.env.GOOGLE_SERVICES_PLIST_PATH) {
-    console.error(`DEBUG: Found GOOGLE_SERVICES_PLIST_PATH: ${process.env.GOOGLE_SERVICES_PLIST_PATH}`);
-    fs.copyFileSync(process.env.GOOGLE_SERVICES_PLIST_PATH, targetPlistPath);
+// Define the target path for the plist file
+const targetPlistPath = path.join(__dirname, '..', 'GoogleService-Info.plist');
+console.log(`Target plist path: ${targetPlistPath}`);
+
+if (process.env.GOOGLE_SERVICES_PLIST) {
+  console.log('Found GOOGLE_SERVICES_PLIST secret, creating plist file...');
+  try {
+    // Write the base64 decoded content directly to the file
+    const decodedContent = Buffer.from(process.env.GOOGLE_SERVICES_PLIST, 'base64').toString();
+    fs.writeFileSync(targetPlistPath, decodedContent);
+    console.log('Successfully created GoogleService-Info.plist from secret');
     
+    // Verify file exists and has content
     const stats = fs.statSync(targetPlistPath);
-    console.error(`DEBUG: File created with size: ${stats.size} bytes`);
-  } else {
-    console.error('DEBUG: GOOGLE_SERVICES_PLIST_PATH not found in environment');
+    console.log(`File created with size: ${stats.size} bytes`);
+  } catch (error) {
+    console.error('Error creating plist file:', error);
     process.exit(1);
   }
-} catch (error) {
-  console.error('DEBUG: Error in prebuild script:', error);
+} else {
+  console.error('GOOGLE_SERVICES_PLIST environment variable not found');
+  console.log('Available environment variables:', Object.keys(process.env));
   process.exit(1);
 }
