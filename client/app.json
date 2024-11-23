@@ -2,61 +2,17 @@
   "expo": {
     "name": "FixedWith",
     "slug": "fixedwith",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "ai.fixedwith.client",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "ai.fixedwith.client",
-      "googleServicesFile": "./GoogleService-Info.plist",
-      "deploymentTarget": "13.4"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "ai.fixedwith.client"
-    },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
-      [
-        "@react-native-firebase/app",
-        {
-          "ios_google_services_file": "GoogleService-Info.plist"
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static",
-            "deploymentTarget": "13.4",
-            "modular_headers": true
-          }
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "7e756c26-bd32-4a65-9a87-784765d1359e"
-      }
-    },
-    "owner": "zill4"
+    }
   }
 }

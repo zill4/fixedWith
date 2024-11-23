@@ -1,34 +1,23 @@
 {
   "cli": {
-    "version": ">= 3.13.3",
-    "appVersionSource": "remote"
+    "version": ">= 3.13.3"
   },
   "build": {
-    "production": {
-      "ios": {
-        "resourceClass": "m-medium"
+    "development": {
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug"
       },
-      "env": {
-        "GOOGLE_SERVICES_PLIST": "GOOGLE_SERVICES_PLIST"
+      "ios": {
+        "buildConfiguration": "Debug"
       }
     },
     "preview": {
-      "distribution": "internal",
-      "ios": {
-        "resourceClass": "m-medium"
-      },
-      "env": {
-        "GOOGLE_SERVICES_PLIST": "GOOGLE_SERVICES_PLIST"
-      }
+      "distribution": "internal"
     },
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
+    "production": {
       "ios": {
         "resourceClass": "m-medium"
-      },
-      "env": {
-        "GOOGLE_SERVICES_PLIST": "GOOGLE_SERVICES_PLIST"
       }
     }
   },

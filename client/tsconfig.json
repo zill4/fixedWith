@@ -6,7 +6,10 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "node"
   },
   "include": [
     "**/*.ts",
